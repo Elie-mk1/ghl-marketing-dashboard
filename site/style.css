@@ -1,0 +1,78 @@
+/* Colors live in one place so they're easy to change */
+:root {
+  --page: #f6f6f3;
+  --card: #ffffff;
+  --ink: #111111;
+  --muted: #5f5e5a;
+  --line: #e4e3dd;
+  --blue: #2a78d6;
+  --green: #0ca30c;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.page { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { margin: 0; font-size: 26px; }
+h2 { margin: 0 0 4px; font-size: 18px; }
+h3 { margin: 24px 0 4px; font-size: 15px; }
+.muted { color: var(--muted); margin: 0 0 16px; }
+.small { font-size: 13px; }
+.top { margin-bottom: 16px; }
+.top .muted { margin: 4px 0 0; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+
+/* the answer box */
+.eyebrow { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); }
+.headline { margin: 0 0 6px; font-size: 21px; font-weight: 650; line-height: 1.35; }
+.answer .muted { margin: 10px 0 0; }
+
+/* charts need a box with a fixed height */
+.chart { position: relative; height: 330px; }
+.chart.tall { height: 380px; }
+
+/* tables */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+th { color: var(--muted); font-weight: 600; font-size: 13px; }
+td.best { font-weight: 700; }
+.tag { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 99px;
+  font-size: 11px; font-weight: 700; background: #eef3fb; color: var(--blue); }
+.tag.cut { background: #fbeeee; color: #b5332f; }
+
+/* funnels: plain HTML bars, centred so they look like a funnel */
+.funnels { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px 28px; }
+.funnel h4 { margin: 0 0 8px; font-size: 14px; }
+.step { display: grid; grid-template-columns: 100px 1fr 34px; gap: 8px; align-items: center; font-size: 12.5px; }
+.step .bar-box { display: flex; justify-content: center; height: 16px; }
+.step .bar { background: var(--blue); border-radius: 4px; min-width: 2px; }
+.step .bar.won { background: var(--green); }
+.step .n { text-align: right; font-weight: 600; }
+.rate { text-align: center; color: var(--muted); font-size: 11.5px; padding-left: 108px; padding-right: 42px; }
+
+/* cleaning section */
+.boxes { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.box { flex: 1 1 200px; background: #f3f3ef; border-radius: 10px; padding: 12px 14px; }
+.box b { display: block; font-size: 20px; }
+.log-item { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0;
+  border-top: 1px solid var(--line); }
+.log-item p { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+.log-item .count { white-space: nowrap; font-weight: 600; }
+.group { margin: 16px 0 4px; font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); }
+#checks { margin: 0; padding-left: 20px; color: var(--muted); }
+footer { padding: 0 4px; }

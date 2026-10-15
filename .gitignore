@@ -1,0 +1,20 @@
+# secrets - never upload
+.env
+
+# raw data contains names, emails and other students' records - never upload
+raw/
+exploration.txt
+
+# generated every run by the automation
+site/data.json
+
+# local Python environment
+.venv/
+__pycache__/
+
+
+# Mac and editor junk
+.DS_Store
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+

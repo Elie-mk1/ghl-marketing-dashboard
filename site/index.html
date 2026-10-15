@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marketing Performance</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Chart.js: a free library that draws charts on a <canvas> -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <main class="page">
+
+    <header class="top">
+      <h1>Marketing performance</h1>
+      <p class="muted" id="updated">Loading…</p>
+    </header>
+
+    <!-- The answer first: the owner reads this and knows what to do -->
+    <section class="card answer">
+      <p class="eyebrow">Where to put next month's budget</p>
+      <p class="headline" id="headline"></p>
+      <p id="subline"></p>
+      <p class="muted small" id="caution"></p>
+    </section>
+
+    <section class="card">
+      <h2>Every source side by side</h2>
+      <p class="muted">Sorted by how much money each lead has brought in.</p>
+      <div class="table-wrap"><table id="scorecard"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>1. How many leads each source brought in</h2>
+      <p class="muted">Real people only: duplicates, staff and other users' records were removed first.</p>
+      <div class="chart"><canvas id="volumeChart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>2. Where each source's deals are in the pipeline now</h2>
+      <p class="muted">Every deal is in exactly one of the 8 stages, so each bar adds up to that source's deals.
+        Blue = still in progress, green = won, grey = dropped out.</p>
+      <div class="chart tall"><canvas id="pipelineChart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>3. How well each source moves people to the next step</h2>
+      <p class="muted">Each funnel follows the path to a sale. The % is how many made it from the step above.</p>
+      <div class="funnels" id="funnels"></div>
+      <h3>Step by step</h3>
+      <p class="muted">★ marks the best source at each step.</p>
+      <div class="table-wrap"><table id="conversionTable"></table></div>
+    </section>
+
+    <section class="card">
+      <h2>4. Money from closed deals</h2>
+      <p class="muted">Total value of won deals, highest first.</p>
+      <div class="chart"><canvas id="revenueChart"></canvas></div>
+    </section>
+
+    <section class="card">
+      <h2>What we cleaned up before counting</h2>
+      <div class="boxes" id="cleanBoxes"></div>
+      <div id="cleanLog"></div>
+      <h3>Consistency checks</h3>
+      <ul id="checks"></ul>
+    </section>
+
+    <footer class="muted small">Data from GoHighLevel, refreshed every morning. Every number is by source.
+      There is no ad-spend data, so advice is based on leads, conversion and revenue.</footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
