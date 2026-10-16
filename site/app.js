@@ -3,6 +3,14 @@
 
 const BLUE = "#2a78d6";
 
+// one color per channel group (blue / orange / aqua: checked to stay distinguishable for colour-blind readers)
+const GROUP_COLORS = {
+  "Paid ads": "#2a78d6",
+  "Outbound": "#eb6834",
+  "Organic": "#1baf7a",
+  "Unclassified": "#a9a79f",
+};
+
 // colors for the 8 stages: blues = in progress, green = won, greys = dropped out
 const STAGE_COLORS = {
   "Qualified Opt In": "#86b6ef",
@@ -27,6 +35,35 @@ function el(tag, text, className) {
   return e;
 }
 
+// a small colored square + the group name (used in legends and table headings)
+function swatch(color) {
+  const i = el("i", undefined, "swatch");
+  i.style.background = color;
+  return i;
+}
+
+// legend for the group colors, placed just above a chart
+function groupLegend(canvasId, groups) {
+  const legend = el("div", undefined, "group-legend");
+  groups.forEach((g) => {
+    const item = el("span");
+    item.append(swatch(GROUP_COLORS[g.name]), g.name);
+    legend.append(item);
+  });
+  const chartBox = document.getElementById(canvasId).parentElement;
+  chartBox.before(legend);
+}
+
+// a full-width heading row inside a table, e.g. "Paid ads - bought with ad budget"
+function groupRow(group, columns) {
+  const row = el("tr", undefined, "group-row");
+  const cell = el("td");
+  cell.colSpan = columns;
+  cell.append(swatch(GROUP_COLORS[group.name]), el("strong", group.name), el("span", " · " + group.note, "muted-inline"));
+  row.append(cell);
+  return row;
+}
+
 // shared look for every Chart.js chart
 Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 Chart.defaults.color = "#5f5e5a";
@@ -49,12 +86,13 @@ function draw(data) {
       { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 
   drawAnswer(data.advice);
-  drawScorecard(sources, P, data.advice);
-  drawVolume(sources, P);
+  const groups = data.groups;
+  drawScorecard(sources, P, data.advice, groups);
+  drawVolume(sources, P, groups);
   drawPipeline(sources, P, data.stages);
-  drawFunnels(sources, P, data.funnel_steps);
-  drawConversionTable(sources, P, data.funnel_steps);
-  drawRevenue(sources, P);
+  drawFunnels(sources, P, data.funnel_steps, groups);
+  drawConversionTable(sources, P, data.funnel_steps, groups);
+  drawRevenue(sources, P, groups);
   drawCleaning(data.cleaning, data.checks);
 }
 
@@ -66,15 +104,21 @@ function drawAnswer(advice) {
 }
 
 // ---------------------------------------------------------------- scorecard table
-function drawScorecard(sources, P, advice) {
+function drawScorecard(sources, P, advice, groups) {
   const table = document.getElementById("scorecard");
   const head = el("tr");
   ["Source", "Leads", "Entered pipeline", "Won", "Win rate", "Revenue", "Average sale", "Revenue per lead"]
     .forEach((h) => head.append(el("th", h)));
   table.append(head);
 
-  const sorted = [...sources].sort((a, b) => P[b].revenue_per_lead - P[a].revenue_per_lead);
-  sorted.forEach((s) => {
+  groups.forEach((g) => {
+    table.append(groupRow(g, 8));
+    const inGroup = sources.filter((s) => P[s].group === g.name)
+      .sort((a, b) => P[b].revenue_per_lead - P[a].revenue_per_lead);
+    inGroup.forEach((s) => addScoreRow(s));
+  });
+
+  function addScoreRow(s) {
     const p = P[s];
     const row = el("tr");
     const name = el("td", s);
@@ -86,22 +130,24 @@ function drawScorecard(sources, P, advice) {
      money(p.revenue), p.avg_sale ? money(p.avg_sale) : "—", money(p.revenue_per_lead)]
       .forEach((v) => row.append(el("td", v)));
     table.append(row);
-  });
+  }
 }
 
 // ---------------------------------------------------------------- 1. volume (bar chart)
-function drawVolume(sources, P) {
+function drawVolume(sources, P, groups) {
+  groupLegend("volumeChart", groups);
   new Chart(document.getElementById("volumeChart"), {
     type: "bar",
     data: {
       labels: sources,
-      datasets: [{ data: sources.map((s) => P[s].leads), backgroundColor: BLUE, borderRadius: 4, maxBarThickness: 22 }],
+      datasets: [{ data: sources.map((s) => P[s].leads), backgroundColor: sources.map((s) => GROUP_COLORS[P[s].group]),
+                   borderRadius: 4, maxBarThickness: 22 }],
     },
     options: {
       indexAxis: "y",                // horizontal bars: long source names stay readable
       maintainAspectRatio: false,
       scales: { x: { beginAtZero: true, title: { display: true, text: "Leads" } }, y: { grid: { display: false } } },
-      plugins: { tooltip: { callbacks: { label: (c) => `${c.raw} leads` } } },
+      plugins: { tooltip: { callbacks: { label: (c) => `${c.raw} leads · ${P[c.label].group}` } } },
     },
   });
 }
@@ -133,6 +179,7 @@ function drawPipeline(sources, P, stages) {
         legend: { display: true, position: "bottom", labels: { boxWidth: 12 } },
         tooltip: {
           callbacks: {
+            title: (items) => `${items[0].label} (${P[items[0].label].group})`,
             label: (c) => {
               const total = P[c.label].deals;
               return `${c.dataset.label}: ${c.raw} of ${total} deals (${pct(c.raw / total)})`;
@@ -145,28 +192,46 @@ function drawPipeline(sources, P, stages) {
 }
 
 // ---------------------------------------------------------------- 3. funnels (plain HTML)
-function drawFunnels(sources, P, steps) {
+// Each row: step name | bar from the left (length = people who reached it) + the count | % who moved on
+function drawFunnels(sources, P, steps, groups) {
   const box = document.getElementById("funnels");
+  let currentGroup = null;
   sources.forEach((s) => {
+    if (P[s].group !== currentGroup) {             // sources arrive grouped, so start a new heading
+      currentGroup = P[s].group;
+      const g = groups.find((x) => x.name === currentGroup);
+      const heading = el("div", undefined, "funnel-group");
+      heading.append(swatch(GROUP_COLORS[g.name]), el("strong", g.name), el("span", " · " + g.note, "muted-inline"));
+      box.append(heading);
+    }
     const p = P[s];
     const f = el("div", undefined, "funnel");
     f.append(el("h4", s));
+
+    const head = el("div", undefined, "step head");
+    head.append(el("span", "Step"), el("span", "People"), el("span", "Moved on"));
+    f.append(head);
+
     p.reached.forEach((n, i) => {
-      if (i > 0) f.append(el("div", "↓ " + pct(p.conversion[i - 1]), "rate"));
       const row = el("div", undefined, "step");
-      const barBox = el("div", undefined, "bar-box");
+      const share = p.reached[0] ? n / p.reached[0] : 0;     // bar length vs all leads
+
+      const track = el("div", undefined, "track");
       const bar = el("div", undefined, i === steps.length - 1 ? "bar won" : "bar");
-      bar.style.width = (p.reached[0] ? (n / p.reached[0]) * 100 : 0) + "%";
-      bar.title = `${n} people reached "${steps[i]}"`;
-      barBox.append(bar);
-      row.append(el("span", steps[i]), barBox, el("span", fmt.format(n), "n"));
+      bar.style.width = `calc((100% - 36px) * ${share})`;   // leave room for the number
+      track.append(bar, el("span", fmt.format(n), "count"));
+
+      const rate = i === 0 ? "" : pct(p.conversion[i - 1]);  // first row has no step above
+      row.title = i === 0 ? `${n} leads`
+        : `${n} of ${p.reached[i - 1]} people moved on from "${steps[i - 1]}" (${rate})`;
+      row.append(el("span", steps[i], "label"), track, el("span", rate, "rate"));
       f.append(row);
     });
     box.append(f);
   });
 }
 
-function drawConversionTable(sources, P, steps) {
+function drawConversionTable(sources, P, steps, groups) {
   const table = document.getElementById("conversionTable");
   const head = el("tr");
   head.append(el("th", "Source"));
@@ -181,7 +246,12 @@ function drawConversionTable(sources, P, steps) {
     const values = sources.map((s) => (i < columns - 1 ? P[s].conversion[i] : P[s].win_rate)).filter((v) => v !== null);
     best.push(Math.max(...values));
   }
+  let currentGroup = null;
   sources.forEach((s) => {
+    if (P[s].group !== currentGroup) {
+      currentGroup = P[s].group;
+      table.append(groupRow(groups.find((x) => x.name === currentGroup), columns + 1));
+    }
     const row = el("tr");
     row.append(el("td", s));
     for (let i = 0; i < columns; i++) {
@@ -194,13 +264,15 @@ function drawConversionTable(sources, P, steps) {
 }
 
 // ---------------------------------------------------------------- 4. revenue (sorted bar)
-function drawRevenue(sources, P) {
+function drawRevenue(sources, P, groups) {
+  groupLegend("revenueChart", groups);
   const sorted = [...sources].sort((a, b) => P[b].revenue - P[a].revenue);
   new Chart(document.getElementById("revenueChart"), {
     type: "bar",
     data: {
       labels: sorted,
-      datasets: [{ data: sorted.map((s) => P[s].revenue), backgroundColor: BLUE, borderRadius: 4, maxBarThickness: 22 }],
+      datasets: [{ data: sorted.map((s) => P[s].revenue), backgroundColor: sorted.map((s) => GROUP_COLORS[P[s].group]),
+                   borderRadius: 4, maxBarThickness: 22 }],
     },
     options: {
       indexAxis: "y",
@@ -210,7 +282,7 @@ function drawRevenue(sources, P) {
              title: { display: true, text: "Revenue from won deals" } },
         y: { grid: { display: false } },
       },
-      plugins: { tooltip: { callbacks: { label: (c) => `${money(c.raw)} from ${P[c.label].won} sales` } } },
+      plugins: { tooltip: { callbacks: { label: (c) => `${money(c.raw)} from ${P[c.label].won} sales · ${P[c.label].group}` } } },
     },
   });
 }

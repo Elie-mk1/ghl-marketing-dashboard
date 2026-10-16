@@ -10,7 +10,7 @@ A one-page dashboard an agency owner opens on Monday morning to see **which lead
 GoHighLevel API → fetch.py → clean.py → metrics.py → site/data.json → site/ (GitHub Pages)
                   download   clean +     numbers by     counts only,     the web page
                   all data   log every   source +       no personal
-                             change      8 checks       details
+                             change      9 checks       details
 ```
 GitHub Actions runs the whole chain **every day at 05:45 Beirut time**, on every code push, and on demand ("Run workflow"). If any check fails, nothing is published and the last correct dashboard stays online.
 
@@ -19,7 +19,7 @@ GitHub Actions runs the whole chain **every day at 05:45 Beirut time**, on every
 | `fetch.py` | Downloads all contacts, pipelines and deals from the GHL API (with pagination and retries). |
 | `explore.py` | Profiles the raw data (tags, sources, dates, stages, values, duplicates). The cleaning rules were designed from this. |
 | `clean.py` | Applies each data decision in order and logs how many leads/deals each step touched. |
-| `metrics.py` | Calculates every number per source, runs 8 consistency checks, writes `site/data.json`. |
+| `metrics.py` | Calculates every number per source, runs 9 consistency checks, writes `site/data.json`. |
 | `site/` | The dashboard: HTML + CSS + JavaScript with Chart.js. It only reads `data.json`. |
 | `decisions.md` | The full reasoning behind every rule. |
 
@@ -54,16 +54,21 @@ GitHub Actions runs the whole chain **every day at 05:45 Beirut time**, on every
 - **Exit stages count as reaching the step where they happened:** Disqualified = opted in; Cancelled/No Show = booked; Lost = had the call.
 - **The pipeline chart shows all 8 stages** grouped as in progress (blue), won (green) and dropped out (grey); each bar sums to that source's deals.
 - **Budget advice ranks by revenue per lead:** there's no ad-spend data, so this is the best proxy for return.
-- **Only paid channels are recommended:** Referral and Website Form can't be bought with ad budget.
+- **Sources are grouped into Paid ads, Outbound and Organic:** the owner's question is where to put *ad* money, so channels that can be bought with ads are shown apart from the rest.
+- **Groups are labels, never totals:** every source keeps its own row and bar; summing a group would be the "blended number" the brief rules out.
+- **Only the Paid ads group is ranked for the budget advice:** Outbound costs the sales team's time, and Organic can't be bought with ads.
+- **Google Search counts as Paid ads; Webinar counts as Organic:** the data doesn't say which they are, so these are stated assumptions, changeable in one line (`CHANNEL_GROUPS` in `metrics.py`).
+- **A source missing from the grouping shows as "Unclassified":** it is still displayed, but not ranked for ad budget until someone assigns it.
 - **Every source is ranked; sources under 15 leads are flagged, never hidden:** the owner should still see a small channel that isn't paying off.
 - **A caution shows when sales are few (28 total):** one sale can change the ranking.
 
 ### Consistency checks (publishing stops if any fail)
-Leads and deals by source add up to totals; each source's 8 stages add up to its deals; pipeline + not-in-pipeline = leads; the funnel never grows; last funnel step = won deals; revenue adds up; kept + removed = what GHL returned.
+Leads and deals by source add up to totals; each source's 8 stages add up to its deals; pipeline + not-in-pipeline = leads; the funnel never grows; last funnel step = won deals; revenue adds up; every source is in exactly one channel group; kept + removed = what GHL returned.
 
 ## Limitations
 - **No ad-spend data,** so true ROI and cost per lead can't be calculated.
 - **The whole campaign was imported on one day,** so dates can't show trends over the 3 months.
+- **Channel groups are assumptions:** Google Search could be free search traffic and Webinar could be promoted with ads.
 - **Small numbers:** Instagram Ad ($1,086/lead) and Billboard ($1,081/lead) are effectively tied.
 
 ## Run it locally

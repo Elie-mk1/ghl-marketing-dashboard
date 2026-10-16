@@ -54,15 +54,28 @@ td.best { font-weight: 700; }
   font-size: 11px; font-weight: 700; background: #eef3fb; color: var(--blue); }
 .tag.cut { background: #fbeeee; color: #b5332f; }
 
-/* funnels: plain HTML bars, centred so they look like a funnel */
-.funnels { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px 28px; }
-.funnel h4 { margin: 0 0 8px; font-size: 14px; }
-.step { display: grid; grid-template-columns: 100px 1fr 34px; gap: 8px; align-items: center; font-size: 12.5px; }
-.step .bar-box { display: flex; justify-content: center; height: 16px; }
-.step .bar { background: var(--blue); border-radius: 4px; min-width: 2px; }
-.step .bar.won { background: var(--green); }
-.step .n { text-align: right; font-weight: 600; }
-.rate { text-align: center; color: var(--muted); font-size: 11.5px; padding-left: 108px; padding-right: 42px; }
+/* funnels: bars start at the left, the number sits at the end of each bar */
+.funnels { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px 32px; }
+.funnel h4 { margin: 0 0 6px; font-size: 15px; }
+.step { display: grid; grid-template-columns: 96px 1fr 76px; gap: 10px; align-items: center;
+  padding: 5px 0; font-size: 13px; border-top: 1px solid var(--line); }
+.step.head { border-top: 0; padding: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.step .label { color: var(--ink); }
+.track { display: flex; align-items: center; height: 20px; }
+.track .bar { flex: none; height: 16px; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--blue); }
+.track .bar.won { background: var(--green); }
+.track .count { margin-left: 6px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.step .rate, .step.head span:last-child { text-align: right; }
+.step .rate { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* channel groups */
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: 0; }
+.group-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+tr.group-row td { padding-top: 16px; text-align: left; border-bottom: 1px solid var(--ink); white-space: normal; }
+.muted-inline { color: var(--muted); font-weight: 400; font-size: 13px; }
+.funnel-group { grid-column: 1 / -1; padding: 8px 0 6px; border-bottom: 1px solid var(--ink); }
+.funnel-group:not(:first-child) { margin-top: 8px; }
 
 /* cleaning section */
 .boxes { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }

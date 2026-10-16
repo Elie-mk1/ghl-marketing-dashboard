@@ -93,6 +93,10 @@ the agency's batch.
 Why: The import date is not when leads really arrived during the 3 months, so a
 "leads per week" chart would be meaningless.
 
+# 13. Small sources.
+Every source is shown and ranked. Sources under 15 leads are flagged as an “early signal” rather than hidden, so the owner can still see a small channel that isn’t paying off and decide not to fund it.
+
+
 
 1. Why not just filter by the Sales Pipeline?
 Because a pipeline holds deals, not leads. About 117 of the agency’s leads never became a deal, so filtering by pipeline would drop them. Every source would then look like it converts almost 100%, which is survivorship bias. The Sales Pipeline also contains 33 deals from the sandbox demo data. So I decide scope by the lead (the agency tag) and only then keep that lead’s deals in the Sales Pipeline.
@@ -107,3 +111,14 @@ Two separate facts are recorded: did the sale happen? and how much was it worth?
 You can only fail to show up to a call you booked. So anyone in No Show definitely got as far as booking, and stopped there. Counting them at the booking step means the funnel shows correctly that they booked but never had the call. The same logic applies to Cancelled (booked, then cancelled), Disqualified (opted in, then ruled out) and Lost (had the call, then said no).
 
 All four answers share one idea: every rule exists to make one source fairly comparable with another. If you remember that, you can work out any of the other decisions on the spot.
+
+## 14. Channel groups (Paid ads / Outbound / Organic)
+Found: the 9 sources mix channels bought with ad budget (Facebook Ad, Instagram Ad, Billboard),
+outbound sales work (Cold Email, LinkedIn Outreach) and free channels (Referral, Website Form).
+Google Search and Webinar could be either.
+Decision: Group every source as Paid ads, Outbound or Organic. Only Paid ads are ranked for the
+budget advice. Google Search = Paid ads, Webinar = Organic (stated assumptions, one line to change).
+Groups are shown as headings and colors, never as group totals.
+Why: The owner is deciding where to put ad money, so only channels that money can buy should compete.
+Showing group totals would be a blended number, which the brief forbids. A new source that isn't
+assigned yet appears as "Unclassified" rather than silently joining a group.
