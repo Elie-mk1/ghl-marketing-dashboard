@@ -117,42 +117,31 @@ def close(a, c):
 tied_best = paid[1] if len(paid) > 1 and close(paid[0], paid[1]) else None
 tied_worst = paid[-2] if len(paid) > 2 and close(paid[-1], paid[-2]) and paid[-2] != tied_best else None
 
-if len(paid) == 1:
-    headline = f"{best} is the only paid ad channel so far: each lead has brought in {money(best)}."
-elif b["small_sample"]:
-    headline = (f"{best} looks like the strongest paid ad channel ({money(best)} per lead), but from only "
-                f"{b['leads']} leads. Test it with a small budget increase before moving big money.")
-elif tied_best:
-    headline = (f"{best} and {tied_best} are effectively tied as the strongest paid ad channels "
-                f"({money(best)} and {money(tied_best)} per lead). Grow both rather than betting on one.")
-else:
-    headline = (f"Put more of next month's budget into {best}: each lead has brought in "
-                f"{money(best)}, the most of any paid ad channel.")
+# short, direct actions - the board next to them shows the numbers behind each one
+def names(*xs):
+    return " and ".join(x for x in xs if x)
+
 
 if len(paid) == 1:
-    subline = "There is only one paid ad channel so far, so there is nothing to compare it with."
-elif w["won"] == 0:
-    subline = (f"{worst} hasn't produced a single sale from {w['leads']} leads. "
-               "Stop spending on it until that changes.")
-elif tied_worst:
-    subline = (f"{tied_worst} and {worst} returned the least ({money(tied_worst)} and {money(worst)} "
-               "per lead), so cut them back first.")
+    headline = f"{best} is the only paid ad channel so far."
+    subline = None
 else:
-    above = paid[-2]
-    if w["revenue_per_lead"] < 0.5 * per_source[above]["revenue_per_lead"]:   # clearly behind, say how much
-        subline = (f"{worst} returned the least: {money(worst)} per lead, less than half of "
-                   f"{above} ({money(above)}). Cut it back first.")
+    if b["small_sample"]:
+        headline = f"Test a small increase on {best}: only {b['leads']} leads so far."
     else:
-        subline = f"{worst} returned the least ({money(worst)} per lead), so cut it back first."
+        headline = f"Increase spend on {names(best, tied_best)}."
+    if w["won"] == 0:
+        subline = f"Pause {worst}: no sales from {w['leads']} leads."
+    else:
+        subline = f"Reduce spend on {names(tied_worst, worst)}."
 
-caution = f"Based on {total_won} sales in total, so one sale can change the order."
+caution = f"Based on {total_won} sales, so rankings can still shift."
 if small:
-    caution += (f" {', '.join(small)} brought fewer than {MIN_LEADS} leads, so treat "
-                f"{'its' if len(small) == 1 else 'their'} numbers as an early signal.")
+    caution += f" Early signal only: {', '.join(small)} (under {MIN_LEADS} leads)."
 
 unclassified = [s for s in named if group_of[s] == "Unclassified"]
 if unclassified:
-    caution += f" {', '.join(unclassified)} isn't assigned to a channel group yet, so it isn't ranked for ad budget."
+    caution += f" Not ranked: {', '.join(unclassified)} (no channel group yet)."
 
 advice = {"best": best, "worst": worst, "tied_best": tied_best, "tied_worst": tied_worst,
           "headline": headline, "subline": subline,
@@ -203,7 +192,7 @@ json.dump({
     "checks": checks,
 }, open("site/data.json", "w"), indent=2)
 
-print(f"\n{advice['headline']}\n{advice['subline']}\n{advice['caution']}")
+print(f"\n{advice['headline']}\n{advice['subline'] or ''}\n{advice['caution']}")
 print("\nGroup     Source              Leads  Deals  Won  Revenue   Per lead")
 for s in sources:
     x = per_source[s]

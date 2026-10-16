@@ -28,8 +28,8 @@ const REFRESH_MINUTE_UTC = 17;
 const STALE_AFTER_HOURS = 3;   // older than this means the hourly update has probably stopped
 
 const FONT = "Onest, system-ui, -apple-system, 'Segoe UI', sans-serif";
-const INK = "#13232f";
-const MUTED = "#5a6b79";
+// chart text and line colors come from the page theme (light or dark) - see readTheme()
+let INK, MUTED, GRID, CARD;
 
 const fmt = new Intl.NumberFormat("en-US");
 const money = (n) => "$" + fmt.format(Math.round(n));
@@ -91,8 +91,55 @@ const barValueLabels = {
 // shared look for every Chart.js chart
 Chart.defaults.font.family = FONT;
 Chart.defaults.font.size = 13;
-Chart.defaults.color = MUTED;
 Chart.defaults.plugins.legend.display = false;
+
+// ---------------------------------------------------------------- light / dark theme
+// every chart is registered here so it can be redrawn in the new colors when the theme changes
+const charts = [];
+function makeChart(canvasId, buildConfig) {
+  const entry = { canvas: document.getElementById(canvasId), buildConfig };
+  entry.chart = new Chart(entry.canvas, buildConfig());
+  charts.push(entry);
+}
+function redrawCharts() {
+  charts.forEach((c) => { c.chart.destroy(); c.chart = new Chart(c.canvas, c.buildConfig()); });
+}
+
+function readTheme() {
+  const css = getComputedStyle(document.documentElement);
+  const v = (name) => css.getPropertyValue(name).trim();
+  INK = v("--ink"); MUTED = v("--muted"); GRID = v("--line"); CARD = v("--card");
+  Chart.defaults.color = MUTED;
+  Chart.defaults.borderColor = GRID;
+  Chart.defaults.scale.grid.color = GRID;
+  Chart.defaults.scale.border.color = GRID;
+}
+
+setupThemeSwitch();
+
+function setupThemeSwitch() {
+  const KEY = "dashboardTheme";
+  const root = document.documentElement;
+  const buttons = [...document.querySelectorAll("[data-theme-choice]")];
+  const mark = () => buttons.forEach((b) =>
+    b.setAttribute("aria-pressed", String(b.dataset.themeChoice === root.dataset.theme)));
+  const apply = (theme) => { root.dataset.theme = theme; mark(); readTheme(); redrawCharts(); };
+
+  if (root.dataset.theme !== "dark") root.dataset.theme = "light";
+  mark();
+  readTheme();
+  buttons.forEach((b) => b.addEventListener("click", () => {
+    apply(b.dataset.themeChoice);
+    try { localStorage.setItem(KEY, b.dataset.themeChoice); } catch (e) { /* private mode: works until reload */ }
+  }));
+  // until someone picks a theme, follow the computer's light/dark setting
+  const system = matchMedia("(prefers-color-scheme: dark)");
+  system.addEventListener("change", (e) => {
+    let saved = null;
+    try { saved = localStorage.getItem(KEY); } catch (err) { /* ignore */ }
+    if (!saved) apply(e.matches ? "dark" : "light");
+  });
+}
 
 // side menu: hide it with the arrow, bring it back with the Menu button (choice remembered)
 setupMenuToggle();
@@ -199,7 +246,8 @@ function drawStatus(updated) {
 // ---------------------------------------------------------------- the answer
 function drawAnswer(advice) {
   document.getElementById("headline").textContent = advice.headline;
-  document.getElementById("subline").textContent = advice.subline;
+  document.getElementById("subline").textContent = advice.subline || "";
+  document.getElementById("sublineRow").hidden = !advice.subline;
   document.getElementById("caution").textContent = advice.caution;
 }
 
@@ -308,7 +356,7 @@ function drawScorecard(sources, P, advice, groups) {
 // ---------------------------------------------------------------- 1. volume (bar chart)
 function drawVolume(sources, P, groups) {
   groupLegend("volumeChart", groups);
-  new Chart(document.getElementById("volumeChart"), {
+  makeChart("volumeChart", () => ({
     type: "bar",
     data: {
       labels: sources,
@@ -326,7 +374,7 @@ function drawVolume(sources, P, groups) {
       },
     },
     plugins: [barValueLabels],
-  });
+  }));
 }
 
 // ---------------------------------------------------------------- 2. pipeline (stacked bar)
@@ -358,7 +406,7 @@ const segmentLabels = {
         if (n > 0 && width >= 18) {                    // too-thin segments: number is in the hover instead
           ctx.font = `700 12px ${FONT}`;
           ctx.textAlign = "center";
-          ctx.fillStyle = isDark(ds.backgroundColor) ? "#ffffff" : INK;
+          ctx.fillStyle = isDark(ds.backgroundColor) ? "#ffffff" : "#13232f";   // same in both themes: the block is the background
           ctx.fillText(n, bar.base + width / 2, bar.y);
         }
       });
@@ -391,7 +439,7 @@ function drawPipeline(sources, P, stages) {
   });
   document.getElementById("pipelineChart").parentElement.before(legend);
 
-  new Chart(document.getElementById("pipelineChart"), {
+  makeChart("pipelineChart", () => ({
     type: "bar",
     data: {
       labels: sources,
@@ -400,7 +448,7 @@ function drawPipeline(sources, P, stages) {
         label: stage,
         data: sources.map((s) => P[s].stages[stage]),
         backgroundColor: STAGE_COLORS[stage],
-        borderColor: "#ffffff",
+        borderColor: CARD,               // thin gap between segments, in the card color
         borderWidth: 1,
         maxBarThickness: 28,
       })),
@@ -427,7 +475,7 @@ function drawPipeline(sources, P, stages) {
       },
     },
     plugins: [segmentLabels],
-  });
+  }));
 }
 
 // ---------------------------------------------------------------- 3. funnels (plain HTML)
@@ -506,7 +554,7 @@ function drawConversionTable(sources, P, steps, groups) {
 function drawRevenue(sources, P, groups) {
   groupLegend("revenueChart", groups);
   const sorted = [...sources].sort((a, b) => P[b].revenue - P[a].revenue);
-  new Chart(document.getElementById("revenueChart"), {
+  makeChart("revenueChart", () => ({
     type: "bar",
     data: {
       labels: sorted,
@@ -528,7 +576,7 @@ function drawRevenue(sources, P, groups) {
       },
     },
     plugins: [barValueLabels],
-  });
+  }));
 }
 
 // ---------------------------------------------------------------- cleaning + checks

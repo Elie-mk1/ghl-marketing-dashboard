@@ -34,6 +34,7 @@ GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code 
 - **A yellow warning appears if the numbers are more than 3 hours old:** if the hourly update ever stops, the owner sees it instead of trusting old numbers.
 - **Only counts and totals are published:** no names, emails or other students' records, and an automatic check blocks any `@` from being published.
 - **Read-only access to GHL:** the project never creates, edits or deletes anything in the shared sandbox.
+- **Light and dark theme, switch at the top right:** starts from the computer's setting and remembers the owner's choice; charts redraw in the matching colors.
 
 ### Which records belong to the agency
 - **Only leads tagged `dash-project` are kept (49 removed):** that tag marks the one batch that is the agency's campaign. The rest is sandbox demo data or other students' projects.
@@ -65,6 +66,7 @@ GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code 
 - **A source missing from the grouping shows as "Unclassified":** it is still displayed, but not ranked for ad budget until someone assigns it.
 - **Every source is ranked; sources under 15 leads are flagged, never hidden:** the owner should still see a small channel that isn't paying off.
 - **A caution shows when sales are few (28 total):** one sale can change the ranking.
+- **The advice is two short actions ("Increase spend on…", "Reduce spend on…"), with the numbers in the ranked board beside them:** an owner reads the decision in seconds, and the evidence is one glance away.
 
 ### Consistency checks (publishing stops if any fail)
 Leads and deals by source add up to totals; each source's 8 stages add up to its deals; pipeline + not-in-pipeline = leads; the funnel never grows; last funnel step = won deals; revenue adds up; every source is in exactly one channel group; kept + removed = what GHL returned.

@@ -136,3 +136,14 @@ A warning appears if the numbers are more than 3 hours old.
 Why: The owner wants to act on current numbers. A button that pulls from GoHighLevel on demand would need
 a GitHub token, and keys never go in browser code, so hourly updates plus a check button give fresh
 numbers without exposing anything. The warning means a broken update can't go unnoticed.
+
+## 17. Short, direct budget advice
+Found: The advice read as long sentences that repeated the numbers already shown in the ranked board.
+Decision: The advice is two actions: "Increase spend on X (and Y)." and "Reduce spend on Z." (or "Pause Z: no sales
+from N leads."), plus one short caution line. The numbers stay in the board next to it.
+Why: The owner should get the decision in seconds; the evidence is one glance away rather than repeated.
+
+## 18. Light and dark theme
+Decision: A light/dark switch at the top right. It starts from the computer's setting and remembers the choice.
+The budget panel uses the same theme as the rest of the page instead of being a dark block on its own.
+Why: Easier on the eyes in either setting, and one consistent look reads as more professional.
