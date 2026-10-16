@@ -2,7 +2,7 @@ name: Refresh dashboard
 
 on:
   schedule:
-    - cron: "45 2 * * *"   # every day at 02:45 UTC = 05:45 Beirut, ready before Monday morning
+    - cron: "17 * * * *"   # every hour at :17 UTC (site/app.js counts down to this - keep them in sync)
   workflow_dispatch:        # adds a "Run workflow" button for an on-demand refresh
   push:
     branches: [main]        # also run whenever new code is pushed

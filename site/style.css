@@ -33,6 +33,17 @@ h3 { margin: 24px 0 4px; font-size: 15px; }
   margin-bottom: 16px;
 }
 
+/* header status: last update, countdown, check button */
+.status { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 6px;
+  color: var(--muted); font-size: 14px; }
+.status .dot { color: var(--line); }
+#refreshBtn { font: inherit; font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+#refreshBtn:hover { border-color: var(--blue); color: var(--blue); }
+#refreshBtn:disabled { opacity: .6; cursor: default; }
+.stale { margin: 10px 0 0; padding: 10px 12px; border-radius: 8px; background: #fff4d6; color: #5c4400;
+  font-size: 14px; border: 1px solid #f1d58a; }
+
 /* the answer box */
 .eyebrow { margin: 0 0 6px; font-size: 12px; font-weight: 700; letter-spacing: .06em;
   text-transform: uppercase; color: var(--muted); }

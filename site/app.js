@@ -23,6 +23,10 @@ const STAGE_COLORS = {
   "Lost": "#76746d",
 };
 
+// must match the schedule in .github/workflows/refresh.yml ("17 * * * *" = every hour at :17 UTC)
+const REFRESH_MINUTE_UTC = 17;
+const STALE_AFTER_HOURS = 3;   // older than this means the hourly update has probably stopped
+
 const fmt = new Intl.NumberFormat("en-US");
 const money = (n) => "$" + fmt.format(Math.round(n));
 const pct = (n) => (n === null ? "—" : Math.round(n * 100) + "%");
@@ -64,13 +68,29 @@ function groupRow(group, columns) {
   return row;
 }
 
+// prints each bar's value just past its end, so nobody has to hover (phones can't hover)
+const barValueLabels = {
+  id: "barValueLabels",
+  afterDatasetsDraw(chart, args, options) {
+    const { ctx } = chart;
+    ctx.save();
+    ctx.font = "600 12px system-ui, -apple-system, 'Segoe UI', sans-serif";
+    ctx.fillStyle = "#111111";
+    ctx.textBaseline = "middle";
+    chart.getDatasetMeta(0).data.forEach((bar, i) => {
+      ctx.fillText(options.format(chart.data.datasets[0].data[i]), bar.x + 6, bar.y);
+    });
+    ctx.restore();
+  },
+};
+
 // shared look for every Chart.js chart
 Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
 Chart.defaults.color = "#5f5e5a";
 Chart.defaults.plugins.legend.display = false;
 
 // 1. load the numbers, then draw everything
-fetch("data.json")
+fetch(`data.json?t=${Date.now()}`, { cache: "no-store" })   // ?t= skips old cached copies
   .then((response) => response.json())
   .then(draw)
   .catch(() => {
@@ -81,9 +101,7 @@ function draw(data) {
   const sources = data.sources;
   const P = data.by_source;
 
-  document.getElementById("updated").textContent =
-    "Data updated " + new Date(data.updated).toLocaleString("en-GB",
-      { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+  drawStatus(data.updated);
 
   drawAnswer(data.advice);
   const groups = data.groups;
@@ -94,6 +112,59 @@ function draw(data) {
   drawConversionTable(sources, P, data.funnel_steps, groups);
   drawRevenue(sources, P, groups);
   drawCleaning(data.cleaning, data.checks);
+}
+
+// ---------------------------------------------------------------- status: last update, countdown, check button
+function nextRefresh(now) {
+  const next = new Date(now);
+  next.setUTCMinutes(REFRESH_MINUTE_UTC, 0, 0);
+  if (next <= now) next.setUTCHours(next.getUTCHours() + 1);
+  return next;
+}
+
+function countdownText() {
+  const mins = Math.max(1, Math.ceil((nextRefresh(new Date()) - new Date()) / 60000));
+  return `Next update from GoHighLevel in about ${mins} min`;
+}
+
+function drawStatus(updated) {
+  const when = new Date(updated);
+  document.getElementById("updated").textContent = "Numbers updated " + when.toLocaleString("en-GB",
+    { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  const next = document.getElementById("next");
+  const tick = () => { next.textContent = countdownText(); };
+  tick();
+  setInterval(tick, 30000);   // update the countdown every 30 seconds
+
+  // warn if the automatic update seems to have stopped
+  const hoursOld = (Date.now() - when) / 3600000;
+  if (hoursOld > STALE_AFTER_HOURS) {
+    const stale = document.getElementById("stale");
+    stale.textContent = `These numbers are ${Math.floor(hoursOld)} hours old. They normally update every hour, ` +
+      "so the automatic update may have stopped. Ask whoever manages this dashboard to check it.";
+    stale.hidden = false;
+  }
+
+  // "Check for new numbers": looks for a newer data.json and reloads the page if there is one
+  const button = document.getElementById("refreshBtn");
+  const msg = document.getElementById("refreshMsg");
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    msg.textContent = "Checking…";
+    try {
+      const fresh = await (await fetch(`data.json?t=${Date.now()}`, { cache: "no-store" })).json();
+      if (new Date(fresh.updated) > when) {
+        msg.textContent = "New numbers found. Reloading…";
+        location.reload();
+        return;
+      }
+      msg.textContent = "You're already seeing the latest numbers.";
+    } catch (e) {
+      msg.textContent = "Couldn't check right now. Try again in a minute.";
+    }
+    button.disabled = false;
+  });
 }
 
 // ---------------------------------------------------------------- the answer
@@ -122,8 +193,8 @@ function drawScorecard(sources, P, advice, groups) {
     const p = P[s];
     const row = el("tr");
     const name = el("td", s);
-    if (s === advice.best) name.append(el("span", "grow", "tag"));
-    if (s === advice.worst) name.append(el("span", "cut back", "tag cut"));
+    if (s === advice.best || s === advice.tied_best) name.append(el("span", "grow", "tag"));
+    if (s === advice.worst || s === advice.tied_worst) name.append(el("span", "cut back", "tag cut"));
     if (p.small_sample) name.append(el("span", "few leads", "tag"));
     row.append(name);
     [fmt.format(p.leads), fmt.format(p.deals), fmt.format(p.won), pct(p.win_rate),
@@ -146,9 +217,14 @@ function drawVolume(sources, P, groups) {
     options: {
       indexAxis: "y",                // horizontal bars: long source names stay readable
       maintainAspectRatio: false,
+      layout: { padding: { right: 40 } },   // room for the number after the longest bar
       scales: { x: { beginAtZero: true, title: { display: true, text: "Leads" } }, y: { grid: { display: false } } },
-      plugins: { tooltip: { callbacks: { label: (c) => `${c.raw} leads · ${P[c.label].group}` } } },
+      plugins: {
+        tooltip: { callbacks: { label: (c) => `${c.raw} leads · ${P[c.label].group}` } },
+        barValueLabels: { format: (v) => fmt.format(v) },
+      },
     },
+    plugins: [barValueLabels],
   });
 }
 
@@ -277,13 +353,18 @@ function drawRevenue(sources, P, groups) {
     options: {
       indexAxis: "y",
       maintainAspectRatio: false,
+      layout: { padding: { right: 70 } },
       scales: {
         x: { beginAtZero: true, ticks: { callback: (v) => "$" + fmt.format(v / 1000) + "k" },
              title: { display: true, text: "Revenue from won deals" } },
         y: { grid: { display: false } },
       },
-      plugins: { tooltip: { callbacks: { label: (c) => `${money(c.raw)} from ${P[c.label].won} sales · ${P[c.label].group}` } } },
+      plugins: {
+        tooltip: { callbacks: { label: (c) => `${money(c.raw)} from ${P[c.label].won} sales · ${P[c.label].group}` } },
+        barValueLabels: { format: (v) => money(v) },
+      },
     },
+    plugins: [barValueLabels],
   });
 }
 

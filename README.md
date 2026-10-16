@@ -12,7 +12,7 @@ GoHighLevel API → fetch.py → clean.py → metrics.py → site/data.json → 
                   all data   log every   source +       no personal
                              change      9 checks       details
 ```
-GitHub Actions runs the whole chain **every day at 05:45 Beirut time**, on every code push, and on demand ("Run workflow"). If any check fails, nothing is published and the last correct dashboard stays online.
+GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code push, and on demand ("Run workflow"). If any check fails, nothing is published and the last correct dashboard stays online.
 
 | File | Job |
 |---|---|
@@ -28,7 +28,10 @@ GitHub Actions runs the whole chain **every day at 05:45 Beirut time**, on every
 ### Stack
 - **Python scripts + static web page on GitHub Pages:** free, always on, a shareable link, nothing to maintain.
 - **Data pulled server-side by GitHub Actions, not in the browser:** the API key never reaches browser code.
-- **Daily scheduled refresh, not live:** the owner checks weekly, and the key stays server-side.
+- **Hourly scheduled refresh, not live:** fresh enough to act on the same day, and the key stays server-side.
+- **A countdown shows when the next update lands, and a "Check for new numbers" button loads it:** the owner can act on current numbers without waiting or guessing.
+- **No "pull from GoHighLevel now" button in the page:** starting a refresh needs a GitHub token, and keys never go in browser code. That would need a small server holding the token.
+- **A yellow warning appears if the numbers are more than 3 hours old:** if the hourly update ever stops, the owner sees it instead of trusting old numbers.
 - **Only counts and totals are published:** no names, emails or other students' records, and an automatic check blocks any `@` from being published.
 - **Read-only access to GHL:** the project never creates, edits or deletes anything in the shared sandbox.
 
@@ -57,6 +60,7 @@ GitHub Actions runs the whole chain **every day at 05:45 Beirut time**, on every
 - **Sources are grouped into Paid ads, Outbound and Organic:** the owner's question is where to put *ad* money, so channels that can be bought with ads are shown apart from the rest.
 - **Groups are labels, never totals:** every source keeps its own row and bar; summing a group would be the "blended number" the brief rules out.
 - **Only the Paid ads group is ranked for the budget advice:** Outbound costs the sales team's time, and Organic can't be bought with ads.
+- **Channels within 10% of each other are called a tie:** with 28 sales, a $5 gap (Instagram Ad $1,086 vs Billboard $1,081 per lead) isn't a real difference, so the advice says "grow both" instead of picking one.
 - **Google Search counts as Paid ads; Webinar counts as Organic:** the data doesn't say which they are, so these are stated assumptions, changeable in one line (`CHANNEL_GROUPS` in `metrics.py`).
 - **A source missing from the grouping shows as "Unclassified":** it is still displayed, but not ranked for ad budget until someone assigns it.
 - **Every source is ranked; sources under 15 leads are flagged, never hidden:** the owner should still see a small channel that isn't paying off.

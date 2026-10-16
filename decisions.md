@@ -59,7 +59,7 @@ Found: 4 deals "won" but in Disqualified (all non-agency, 0 agency).
 Decision: A deal counts as a sale only if it is in Closed and not marked lost/abandoned.
 Keep the rule even though it affects 0 agency deals today.
 Why: When two fields disagree, take the conservative reading rather than invent revenue.
-The automation runs daily, so the rule protects future data.
+The automation runs every hour, so the rule protects future data.
 
 ## 9. Suspicious deal values
 Found: typical sale $8,500 (range $1,500–12,000). Two agency sales of $145,000
@@ -122,3 +122,17 @@ Groups are shown as headings and colors, never as group totals.
 Why: The owner is deciding where to put ad money, so only channels that money can buy should compete.
 Showing group totals would be a blended number, which the brief forbids. A new source that isn't
 assigned yet appears as "Unclassified" rather than silently joining a group.
+
+## 15. Ties in the budget advice
+Found: Instagram Ad ($1,086/lead) and Billboard ($1,081/lead) differ by $5, with only 28 sales in total.
+Decision: Two paid channels within 10% of each other are reported as a tie ("grow both"); the same at the bottom.
+When the weakest channel is clearly behind (less than half of the next one), the advice says so.
+Why: Picking a single winner from a $5 gap would be false precision. One extra sale would flip it.
+
+## 16. Hourly refresh, countdown and "Check for new numbers"
+Decision: The automation runs every hour instead of once a day. The page shows when the numbers were
+updated, counts down to the next update, and has a button that loads newer numbers as soon as they exist.
+A warning appears if the numbers are more than 3 hours old.
+Why: The owner wants to act on current numbers. A button that pulls from GoHighLevel on demand would need
+a GitHub token, and keys never go in browser code, so hourly updates plus a check button give fresh
+numbers without exposing anything. The warning means a broken update can't go unnoticed.

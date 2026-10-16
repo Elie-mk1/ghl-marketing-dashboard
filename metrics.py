@@ -34,6 +34,7 @@ GROUPS = {   # display order + one-line meaning shown on the dashboard
 }
 PAID_GROUP = "Paid ads"
 MIN_LEADS = 15                          # fewer than this = too small to judge
+TIE_MARGIN = 0.10                       # two channels within 10% of each other = too close to call
 
 clean = json.load(open("raw/clean.json"))
 leads, deals = clean["leads"], clean["deals"]
@@ -104,18 +105,45 @@ if not paid:
 best, worst = paid[0], paid[-1]
 b, w = per_source[best], per_source[worst]
 
-if b["small_sample"]:
+
+def close(a, c):
+    """True if two sources' revenue per lead are within TIE_MARGIN of the higher one."""
+    hi = max(per_source[a]["revenue_per_lead"], per_source[c]["revenue_per_lead"])
+    lo = min(per_source[a]["revenue_per_lead"], per_source[c]["revenue_per_lead"])
+    return hi > 0 and (hi - lo) / hi <= TIE_MARGIN
+
+
+# with few sales, a small gap between two channels isn't a real difference - say so instead of picking one
+tied_best = paid[1] if len(paid) > 1 and close(paid[0], paid[1]) else None
+tied_worst = paid[-2] if len(paid) > 2 and close(paid[-1], paid[-2]) and paid[-2] != tied_best else None
+
+if len(paid) == 1:
+    headline = f"{best} is the only paid ad channel so far: each lead has brought in {money(best)}."
+elif b["small_sample"]:
     headline = (f"{best} looks like the strongest paid ad channel ({money(best)} per lead), but from only "
                 f"{b['leads']} leads. Test it with a small budget increase before moving big money.")
+elif tied_best:
+    headline = (f"{best} and {tied_best} are effectively tied as the strongest paid ad channels "
+                f"({money(best)} and {money(tied_best)} per lead). Grow both rather than betting on one.")
 else:
     headline = (f"Put more of next month's budget into {best}: each lead has brought in "
                 f"{money(best)}, the most of any paid ad channel.")
 
-if w["won"] == 0:
+if len(paid) == 1:
+    subline = "There is only one paid ad channel so far, so there is nothing to compare it with."
+elif w["won"] == 0:
     subline = (f"{worst} hasn't produced a single sale from {w['leads']} leads. "
                "Stop spending on it until that changes.")
+elif tied_worst:
+    subline = (f"{tied_worst} and {worst} returned the least ({money(tied_worst)} and {money(worst)} "
+               "per lead), so cut them back first.")
 else:
-    subline = f"{worst} returned the least ({money(worst)} per lead), so cut it back first."
+    above = paid[-2]
+    if w["revenue_per_lead"] < 0.5 * per_source[above]["revenue_per_lead"]:   # clearly behind, say how much
+        subline = (f"{worst} returned the least: {money(worst)} per lead, less than half of "
+                   f"{above} ({money(above)}). Cut it back first.")
+    else:
+        subline = f"{worst} returned the least ({money(worst)} per lead), so cut it back first."
 
 caution = f"Based on {total_won} sales in total, so one sale can change the order."
 if small:
@@ -126,7 +154,8 @@ unclassified = [s for s in named if group_of[s] == "Unclassified"]
 if unclassified:
     caution += f" {', '.join(unclassified)} isn't assigned to a channel group yet, so it isn't ranked for ad budget."
 
-advice = {"best": best, "worst": worst, "headline": headline, "subline": subline,
+advice = {"best": best, "worst": worst, "tied_best": tied_best, "tied_worst": tied_worst,
+          "headline": headline, "subline": subline,
           "caution": caution, "ranked": ranked, "small_sample": small}
 
 # ---------------------------------------------------------------- consistency checks
