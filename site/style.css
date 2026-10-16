@@ -88,6 +88,13 @@ tr.group-row td { padding-top: 16px; text-align: left; border-bottom: 1px solid 
 .funnel-group { grid-column: 1 / -1; padding: 8px 0 6px; border-bottom: 1px solid var(--ink); }
 .funnel-group:not(:first-child) { margin-top: 8px; }
 
+/* pipeline legend, grouped by meaning */
+.stage-legend { display: flex; flex-direction: column; gap: 6px; margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.stage-legend-group { display: grid; grid-template-columns: 130px 1fr; gap: 2px 12px; align-items: baseline; }
+.stage-legend-items { display: flex; flex-wrap: wrap; gap: 4px 16px; }
+.stage-legend-title { font-weight: 700; color: var(--ink); }
+@media (max-width: 640px) { .stage-legend-group { grid-template-columns: 1fr; } }
+
 /* cleaning section */
 .boxes { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
 .box { flex: 1 1 200px; background: #f3f3ef; border-radius: 10px; padding: 12px 14px; }

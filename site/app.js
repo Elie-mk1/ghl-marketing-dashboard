@@ -229,7 +229,67 @@ function drawVolume(sources, P, groups) {
 }
 
 // ---------------------------------------------------------------- 2. pipeline (stacked bar)
+// which stages belong to which part of the journey (used for the legend)
+const STAGE_GROUPS = [
+  ["Still in progress", ["Qualified Opt In", "Booked call", "Follow Up"]],
+  ["Won", ["Closed"]],
+  ["Dropped out", ["Disqualified", "Cancelled", "No Show", "Lost"]],
+];
+
+// is a background color dark enough to need white text on it?
+function isDark(hex) {
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+  return 0.299 * r + 0.587 * g + 0.114 * b < 150;
+}
+
+// writes the deal count inside every segment that is wide enough, and the total after each bar
+const segmentLabels = {
+  id: "segmentLabels",
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    const last = chart.data.datasets.length - 1;
+    ctx.save();
+    ctx.textBaseline = "middle";
+    chart.data.datasets.forEach((ds, d) => {
+      chart.getDatasetMeta(d).data.forEach((bar, i) => {
+        const n = ds.data[i];
+        const width = bar.x - bar.base;
+        if (n > 0 && width >= 18) {                    // too-thin segments: number is in the hover instead
+          ctx.font = "700 12px system-ui, -apple-system, 'Segoe UI', sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillStyle = isDark(ds.backgroundColor) ? "#ffffff" : "#111111";
+          ctx.fillText(n, bar.base + width / 2, bar.y);
+        }
+      });
+    });
+    // total at the end of each bar
+    chart.getDatasetMeta(last).data.forEach((bar, i) => {
+      const total = chart.data.datasets.reduce((sum, ds) => sum + ds.data[i], 0);
+      ctx.font = "600 12px system-ui, -apple-system, 'Segoe UI', sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillStyle = "#5f5e5a";
+      ctx.fillText(`${total} deals`, bar.x + 8, bar.y);
+    });
+    ctx.restore();
+  },
+};
+
 function drawPipeline(sources, P, stages) {
+  // legend grouped by meaning, above the chart
+  const legend = el("div", undefined, "stage-legend");
+  STAGE_GROUPS.forEach(([title, names]) => {
+    const group = el("div", undefined, "stage-legend-group");
+    const items = el("div", undefined, "stage-legend-items");
+    names.filter((n) => stages.includes(n)).forEach((n) => {
+      const item = el("span");
+      item.append(swatch(STAGE_COLORS[n]), n);
+      items.append(item);
+    });
+    group.append(el("span", title, "stage-legend-title"), items);
+    legend.append(group);
+  });
+  document.getElementById("pipelineChart").parentElement.before(legend);
+
   new Chart(document.getElementById("pipelineChart"), {
     type: "bar",
     data: {
@@ -241,18 +301,19 @@ function drawPipeline(sources, P, stages) {
         backgroundColor: STAGE_COLORS[stage],
         borderColor: "#ffffff",
         borderWidth: 1,
-        maxBarThickness: 24,
+        maxBarThickness: 28,
       })),
     },
     options: {
       indexAxis: "y",
       maintainAspectRatio: false,
+      layout: { padding: { right: 70 } },              // room for "23 deals"
       scales: {
-        x: { stacked: true, beginAtZero: true, title: { display: true, text: "Deals" } },
-        y: { stacked: true, grid: { display: false } },
+        x: { stacked: true, beginAtZero: true, display: false },   // numbers are written on the bars instead
+        y: { stacked: true, grid: { display: false }, border: { display: false } },
       },
       plugins: {
-        legend: { display: true, position: "bottom", labels: { boxWidth: 12 } },
+        legend: { display: false },                     // replaced by the grouped legend above
         tooltip: {
           callbacks: {
             title: (items) => `${items[0].label} (${P[items[0].label].group})`,
@@ -264,6 +325,7 @@ function drawPipeline(sources, P, stages) {
         },
       },
     },
+    plugins: [segmentLabels],
   });
 }
 
