@@ -27,6 +27,10 @@ const STAGE_COLORS = {
 const REFRESH_MINUTE_UTC = 17;
 const STALE_AFTER_HOURS = 3;   // older than this means the hourly update has probably stopped
 
+const FONT = "Onest, system-ui, -apple-system, 'Segoe UI', sans-serif";
+const INK = "#13232f";
+const MUTED = "#5a6b79";
+
 const fmt = new Intl.NumberFormat("en-US");
 const money = (n) => "$" + fmt.format(Math.round(n));
 const pct = (n) => (n === null ? "—" : Math.round(n * 100) + "%");
@@ -63,7 +67,7 @@ function groupRow(group, columns) {
   const row = el("tr", undefined, "group-row");
   const cell = el("td");
   cell.colSpan = columns;
-  cell.append(swatch(GROUP_COLORS[group.name]), el("strong", group.name), el("span", " · " + group.note, "muted-inline"));
+  cell.append(swatch(GROUP_COLORS[group.name]), el("strong", group.name), el("span", group.note, "muted-inline"));
   row.append(cell);
   return row;
 }
@@ -74,8 +78,8 @@ const barValueLabels = {
   afterDatasetsDraw(chart, args, options) {
     const { ctx } = chart;
     ctx.save();
-    ctx.font = "600 12px system-ui, -apple-system, 'Segoe UI', sans-serif";
-    ctx.fillStyle = "#111111";
+    ctx.font = `600 12px ${FONT}`;
+    ctx.fillStyle = INK;
     ctx.textBaseline = "middle";
     chart.getDatasetMeta(0).data.forEach((bar, i) => {
       ctx.fillText(options.format(chart.data.datasets[0].data[i]), bar.x + 6, bar.y);
@@ -85,14 +89,15 @@ const barValueLabels = {
 };
 
 // shared look for every Chart.js chart
-Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
-Chart.defaults.color = "#5f5e5a";
+Chart.defaults.font.family = FONT;
+Chart.defaults.font.size = 13;
+Chart.defaults.color = MUTED;
 Chart.defaults.plugins.legend.display = false;
 
 // 1. load the numbers, then draw everything
 fetch(`data.json?t=${Date.now()}`, { cache: "no-store" })   // ?t= skips old cached copies
   .then((response) => response.json())
-  .then(draw)
+  .then((data) => document.fonts.ready.then(() => draw(data)))   // wait for the web font so charts use it
   .catch(() => {
     document.getElementById("updated").textContent = "Could not load data.json";
   });
@@ -104,6 +109,9 @@ function draw(data) {
   drawStatus(data.updated);
 
   drawAnswer(data.advice);
+  drawBoard(data.advice, P);
+  drawInsights(sources, P, data.funnel_steps);
+  highlightRail();
   const groups = data.groups;
   drawScorecard(sources, P, data.advice, groups);
   drawVolume(sources, P, groups);
@@ -172,6 +180,78 @@ function drawAnswer(advice) {
   document.getElementById("headline").textContent = advice.headline;
   document.getElementById("subline").textContent = advice.subline;
   document.getElementById("caution").textContent = advice.caution;
+}
+
+// ---------------------------------------------------------------- decision board: paid channels, ranked
+function drawBoard(advice, P) {
+  const board = document.getElementById("board");
+  const paid = advice.ranked.filter((s) => P[s].group === "Paid ads");
+  const max = Math.max(...paid.map((s) => P[s].revenue_per_lead), 1);
+  paid.forEach((s) => {
+    const p = P[s];
+    const [cls, word] = (s === advice.best || s === advice.tied_best) ? ["grow", "Grow"]
+      : (s === advice.worst || s === advice.tied_worst) ? ["cut", "Cut back"] : ["hold", "Hold"];
+    const row = el("div", undefined, "board-row");
+    const name = el("div", undefined, "board-name");
+    name.append(s, el("span", word, "verdict " + cls));
+    const bar = el("div", undefined, "board-bar");
+    const fill = el("span");
+    fill.style.width = (p.revenue_per_lead / max) * 100 + "%";
+    bar.append(fill);
+    const sales = `${p.won} ${p.won === 1 ? "sale" : "sales"} from ${p.leads} leads, ${money(p.revenue)} revenue`;
+    row.append(name, el("div", money(p.revenue_per_lead), "board-value"), bar, el("div", sales, "board-meta"));
+    board.append(row);
+  });
+}
+
+// ---------------------------------------------------------------- highlight tiles (each one names a single source)
+function drawInsights(sources, P, steps) {
+  const named = sources.filter((s) => s !== "Unknown source");
+  const judged = named.filter((s) => !P[s].small_sample);
+  const top = (list, key) => list.reduce((a, b) => (P[b][key] > P[a][key] ? b : a));
+
+  const mostLeads = top(named, "leads");
+  const bestRate = top(judged.length ? judged : named, "win_rate");
+  const mostRevenue = top(named, "revenue");
+
+  // the single weakest step: lowest "moved on" rate where at least 8 people were at the step above
+  let leak = null;
+  named.forEach((s) => P[s].conversion.forEach((r, i) => {
+    if (r !== null && P[s].reached[i] >= 8 && (!leak || r < leak.r)) leak = { s, i, r };
+  }));
+
+  const tiles = [
+    ["Most leads", mostLeads, `${fmt.format(P[mostLeads].leads)} leads`],
+    ["Best lead-to-sale rate", bestRate, `${pct(P[bestRate].win_rate)} of its leads bought`],
+    ["Most revenue", mostRevenue, `${money(P[mostRevenue].revenue)} from ${P[mostRevenue].won} sales`],
+  ];
+  if (leak) {
+    tiles.push(["Biggest drop-off", leak.s,
+      `Only ${pct(leak.r)} went from ${steps[leak.i].toLowerCase()} to ${steps[leak.i + 1].toLowerCase()}`]);
+  }
+
+  const box = document.getElementById("insights");
+  tiles.forEach(([label, source, meta]) => {
+    const t = el("div", undefined, "tile");
+    t.append(el("p", label, "tile-label"), el("p", source, "tile-value"), el("p", meta, "tile-meta"));
+    box.append(t);
+  });
+}
+
+// ---------------------------------------------------------------- section rail: mark the section in view
+function highlightRail() {
+  const links = [...document.querySelectorAll(".rail a")];
+  if (!links.length || !("IntersectionObserver" in window)) return;
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      links.forEach((a) => a.classList.toggle("active", a.getAttribute("href") === "#" + e.target.id));
+    });
+  }, { rootMargin: "-30% 0px -60% 0px" });
+  links.forEach((a) => {
+    const target = document.querySelector(a.getAttribute("href"));
+    if (target) observer.observe(target);
+  });
 }
 
 // ---------------------------------------------------------------- scorecard table
@@ -255,9 +335,9 @@ const segmentLabels = {
         const n = ds.data[i];
         const width = bar.x - bar.base;
         if (n > 0 && width >= 18) {                    // too-thin segments: number is in the hover instead
-          ctx.font = "700 12px system-ui, -apple-system, 'Segoe UI', sans-serif";
+          ctx.font = `700 12px ${FONT}`;
           ctx.textAlign = "center";
-          ctx.fillStyle = isDark(ds.backgroundColor) ? "#ffffff" : "#111111";
+          ctx.fillStyle = isDark(ds.backgroundColor) ? "#ffffff" : INK;
           ctx.fillText(n, bar.base + width / 2, bar.y);
         }
       });
@@ -265,9 +345,9 @@ const segmentLabels = {
     // total at the end of each bar
     chart.getDatasetMeta(last).data.forEach((bar, i) => {
       const total = chart.data.datasets.reduce((sum, ds) => sum + ds.data[i], 0);
-      ctx.font = "600 12px system-ui, -apple-system, 'Segoe UI', sans-serif";
+      ctx.font = `600 12px ${FONT}`;
       ctx.textAlign = "left";
-      ctx.fillStyle = "#5f5e5a";
+      ctx.fillStyle = MUTED;
       ctx.fillText(`${total} deals`, bar.x + 8, bar.y);
     });
     ctx.restore();
@@ -339,7 +419,7 @@ function drawFunnels(sources, P, steps, groups) {
       currentGroup = P[s].group;
       const g = groups.find((x) => x.name === currentGroup);
       const heading = el("div", undefined, "funnel-group");
-      heading.append(swatch(GROUP_COLORS[g.name]), el("strong", g.name), el("span", " · " + g.note, "muted-inline"));
+      heading.append(swatch(GROUP_COLORS[g.name]), el("strong", g.name), el("span", g.note, "muted-inline"));
       box.append(heading);
     }
     const p = P[s];
@@ -434,9 +514,9 @@ function drawRevenue(sources, P, groups) {
 function drawCleaning(cleaning, checks) {
   const s = cleaning.start, e = cleaning.end;
   const boxes = document.getElementById("cleanBoxes");
-  [[`${s.leads} leads · ${s.deals} deals`, "Pulled from GoHighLevel"],
-   [`${s.leads - e.leads} leads · ${s.deals - e.deals} deals`, "Removed (reasons below)"],
-   [`${e.leads} leads · ${e.deals} deals`, "Counted in this dashboard"]].forEach(([big, small]) => {
+  [[`${s.leads} leads, ${s.deals} deals`, "Pulled from GoHighLevel"],
+   [`${s.leads - e.leads} leads, ${s.deals - e.deals} deals`, "Removed (reasons below)"],
+   [`${e.leads} leads, ${e.deals} deals`, "Counted in this dashboard"]].forEach(([big, small]) => {
     const b = el("div", undefined, "box");
     b.append(el("b", big), el("span", small, "muted"));
     boxes.append(b);

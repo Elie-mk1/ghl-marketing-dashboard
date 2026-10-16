@@ -4,78 +4,107 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Marketing Performance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="style.css">
   <!-- Chart.js: a free library that draws charts on a <canvas> -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
-  <main class="page">
+  <div class="shell">
 
-    <header class="top">
-      <h1>Marketing performance</h1>
-      <div class="status">
-        <span id="updated">Loading…</span>
-        <span class="dot">·</span>
-        <span id="next"></span>
-        <button type="button" id="refreshBtn">Check for new numbers</button>
-        <span id="refreshMsg" class="muted-inline" aria-live="polite"></span>
-      </div>
-      <p class="stale" id="stale" hidden></p>
-    </header>
+    <!-- section links, shown on wide screens -->
+    <nav class="rail" aria-label="Sections">
+      <p class="rail-title">Lead sources</p>
+      <a href="#decision">Budget decision</a>
+      <a href="#sources">All sources</a>
+      <a href="#volume"><span class="step-no">1</span>Lead volume</a>
+      <a href="#pipeline"><span class="step-no">2</span>Pipeline</a>
+      <a href="#conversion"><span class="step-no">3</span>Conversion</a>
+      <a href="#revenue"><span class="step-no">4</span>Revenue</a>
+      <a href="#cleanup">Data cleanup</a>
+    </nav>
 
-    <!-- The answer first: the owner reads this and knows what to do -->
-    <section class="card answer">
-      <p class="eyebrow">Where to put next month's budget</p>
-      <p class="headline" id="headline"></p>
-      <p id="subline"></p>
-      <p class="muted small" id="caution"></p>
-    </section>
+    <main class="page">
+      <header class="top">
+        <div>
+          <h1>Marketing performance</h1>
+          <p class="top-sub">Which lead sources earn next month's budget, compared side by side.</p>
+        </div>
+        <div class="status">
+          <span id="updated">Loading…</span>
+          <span id="next"></span>
+          <button type="button" id="refreshBtn">Check for new numbers</button>
+          <span id="refreshMsg" aria-live="polite"></span>
+        </div>
+        <p class="stale" id="stale" hidden></p>
+      </header>
 
-    <section class="card">
-      <h2>Every source side by side</h2>
-      <p class="muted">Grouped by channel type. Only <strong>Paid ads</strong> compete for ad budget. Inside each group, sources are sorted by how much money each lead has brought in.</p>
-      <div class="table-wrap"><table id="scorecard"></table></div>
-    </section>
+      <!-- The answer first: the owner reads this and knows what to do -->
+      <section class="decision" id="decision" aria-labelledby="decision-h">
+        <div class="decision-text">
+          <h2 id="decision-h">Next month's ad budget</h2>
+          <p class="headline" id="headline"></p>
+          <p class="subline" id="subline"></p>
+          <p class="caution" id="caution"></p>
+        </div>
+        <div class="board" aria-label="Paid ad channels ranked by money per lead">
+          <div class="board-head"><span>Paid ad channel</span><span>Money per lead</span></div>
+          <div id="board"></div>
+        </div>
+      </section>
 
-    <section class="card">
-      <h2>1. How many leads each source brought in</h2>
-      <p class="muted">Real people only: duplicates, staff and other users' records were removed first.</p>
-      <div class="chart"><canvas id="volumeChart"></canvas></div>
-    </section>
+      <section class="insights" id="insights" aria-label="Highlights"></section>
 
-    <section class="card">
-      <h2>2. Where each source's deals are in the pipeline now</h2>
-      <p class="muted">Every deal is in exactly one of the 8 stages. The number inside each colored block is how many deals
-        are in that stage; the number after the bar is that source's total.</p>
-      <div class="chart tall"><canvas id="pipelineChart"></canvas></div>
-    </section>
+      <section class="card" id="sources">
+        <h2>Every source side by side</h2>
+        <p class="lede">Grouped by channel type. Only <strong>Paid ads</strong> compete for ad budget. Inside each group,
+          sources are sorted by how much money each lead has brought in.</p>
+        <div class="table-wrap"><table id="scorecard"></table></div>
+      </section>
 
-    <section class="card">
-      <h2>3. How well each source moves people to the next step</h2>
-      <p class="muted">Each funnel follows the path to a sale. Bars are measured against all of that source's leads; "Moved on" is the share of people from the step above who reached this step.</p>
-      <div class="funnels" id="funnels"></div>
-      <h3>Step by step</h3>
-      <p class="muted">★ marks the best source at each step.</p>
-      <div class="table-wrap"><table id="conversionTable"></table></div>
-    </section>
+      <section class="card" id="volume">
+        <h2><span class="step-no">1</span>How many leads each source brought in</h2>
+        <p class="lede">Real people only: duplicates, staff and other users' records were removed first.</p>
+        <div class="chart"><canvas id="volumeChart"></canvas></div>
+      </section>
 
-    <section class="card">
-      <h2>4. Money from closed deals</h2>
-      <p class="muted">Total value of won deals, highest first. Colors show the channel group.</p>
-      <div class="chart"><canvas id="revenueChart"></canvas></div>
-    </section>
+      <section class="card" id="pipeline">
+        <h2><span class="step-no">2</span>Where each source's deals are in the pipeline now</h2>
+        <p class="lede">Every deal is in exactly one of the 8 stages. The number inside each colored block is how many deals
+          are in that stage; the number after the bar is that source's total.</p>
+        <div class="chart tall"><canvas id="pipelineChart"></canvas></div>
+      </section>
 
-    <section class="card">
-      <h2>What we cleaned up before counting</h2>
-      <div class="boxes" id="cleanBoxes"></div>
-      <div id="cleanLog"></div>
-      <h3>Consistency checks</h3>
-      <ul id="checks"></ul>
-    </section>
+      <section class="card" id="conversion">
+        <h2><span class="step-no">3</span>How well each source moves people to the next step</h2>
+        <p class="lede">Each funnel follows the path to a sale. Bars are measured against all of that source's leads;
+          "Moved on" is the share of people from the step above who reached this step.</p>
+        <div class="funnels" id="funnels"></div>
+        <h3>Step by step</h3>
+        <p class="lede">★ marks the best source at each step.</p>
+        <div class="table-wrap"><table id="conversionTable"></table></div>
+      </section>
 
-    <footer class="muted small">Data from GoHighLevel, refreshed automatically every hour. Every number is by source.
-      There is no ad-spend data, so advice is based on leads, conversion and revenue.</footer>
-  </main>
+      <section class="card" id="revenue">
+        <h2><span class="step-no">4</span>Money from closed deals</h2>
+        <p class="lede">Total value of won deals, highest first. Colors show the channel group.</p>
+        <div class="chart"><canvas id="revenueChart"></canvas></div>
+      </section>
+
+      <section class="card" id="cleanup">
+        <h2>What we cleaned up before counting</h2>
+        <div class="boxes" id="cleanBoxes"></div>
+        <div id="cleanLog"></div>
+        <h3>Consistency checks</h3>
+        <ul id="checks"></ul>
+      </section>
+
+      <footer class="foot">Data from GoHighLevel, refreshed automatically every hour. Every number is by source.
+        There is no ad-spend data, so advice is based on leads, conversion and revenue.</footer>
+    </main>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>
