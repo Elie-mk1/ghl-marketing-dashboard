@@ -206,6 +206,22 @@ tr.group-row:hover td { background: none; }
 .step .rate { font-weight: 600; font-variant-numeric: tabular-nums; }
 
 /* ---------- data cleanup ---------- */
+.data-note { padding-top: 20px; padding-bottom: 20px; }
+.data-note h2 { font-size: 16px; }
+.note-summary { margin: 4px 0 0; color: var(--muted); font-size: 14px; max-width: 90ch; }
+.data-details summary { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; cursor: pointer;
+  list-style: none; color: var(--blue); font-size: 14px; font-weight: 600; }
+.data-details summary::-webkit-details-marker { display: none; }
+.data-details summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform .15s; }
+.data-details[open] summary::after { transform: translateY(2px) rotate(-135deg); }
+.data-details summary:hover { text-decoration: underline; }
+.data-details .when-open, .data-details[open] .when-closed { display: none; }
+.data-details[open] .when-open { display: inline; }
+.data-details[open] summary { margin-bottom: 8px; }
+.rail-foot { margin-top: 10px; padding-top: 12px !important; border-top: 1px solid var(--line); border-radius: 0 !important;
+  font-size: 13px !important; }
+.rail-foot.active { border-radius: 8px !important; }
 .boxes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 8px 0 18px; }
 .box { background: var(--soft); border-radius: var(--radius); padding: 14px 16px; }
 .box b { display: block; font-size: 20px; font-weight: 700; }
@@ -214,6 +230,6 @@ tr.group-row:hover td { background: none; }
 .log-item { display: flex; justify-content: space-between; gap: 16px; padding: 12px 0; border-top: 1px solid var(--line); }
 .log-item p { margin: 2px 0 0; color: var(--muted); font-size: 14px; max-width: 72ch; }
 .log-item .count { white-space: nowrap; font-weight: 600; font-variant-numeric: tabular-nums; }
-#checks { margin: 0; padding-left: 20px; color: var(--muted); }
+#checks { margin: 0; padding-left: 0; list-style: none; color: var(--muted); }
 #checks li { margin: 3px 0; }
 .foot { padding: 4px 4px 0; color: var(--muted); font-size: 13px; max-width: 80ch; }

@@ -40,7 +40,7 @@
       <a href="#pipeline"><span class="step-no">2</span>Pipeline</a>
       <a href="#conversion"><span class="step-no">3</span>Conversion</a>
       <a href="#revenue"><span class="step-no">4</span>Revenue</a>
-      <a href="#cleanup">Data cleanup</a>
+      <a href="#cleanup" class="rail-foot">About this data</a>
     </nav>
 
     <main class="page">
@@ -114,12 +114,17 @@
         <div class="chart"><canvas id="revenueChart"></canvas></div>
       </section>
 
-      <section class="card" id="cleanup">
-        <h2>What we cleaned up before counting</h2>
-        <div class="boxes" id="cleanBoxes"></div>
-        <div id="cleanLog"></div>
-        <h3>Consistency checks</h3>
-        <ul id="checks"></ul>
+      <!-- data note: one summary line; the full cleanup log and checks open on click -->
+      <section class="card data-note" id="cleanup" aria-labelledby="cleanup-h">
+        <h2 id="cleanup-h">About this data</h2>
+        <p class="note-summary" id="cleanSummary"></p>
+        <details class="data-details">
+          <summary><span class="when-closed">Show details</span><span class="when-open">Hide details</span></summary>
+          <div class="boxes" id="cleanBoxes"></div>
+          <div id="cleanLog"></div>
+          <h3>Consistency checks</h3>
+          <ul id="checks"></ul>
+        </details>
       </section>
 
       <footer class="foot">Data from GoHighLevel, refreshed automatically every hour. Every number is by source.

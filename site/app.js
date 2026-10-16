@@ -582,6 +582,23 @@ function drawRevenue(sources, P, groups) {
 // ---------------------------------------------------------------- cleaning + checks
 function drawCleaning(cleaning, checks) {
   const s = cleaning.start, e = cleaning.end;
+
+  // one-line summary that is always visible; everything else sits inside "Show details"
+  const SHORT = {
+    "Leads that aren't this agency's": "other users' records",
+    "Internal & test leads": "staff and test leads",
+    "Duplicate leads": "duplicates",
+  };
+  const why = cleaning.log.filter((x) => x.kind === "removed" && x.leads)
+    .map((x) => `${x.leads} ${SHORT[x.title] || x.title.toLowerCase()}`);
+  const passed = checks.filter((c) => c.passed).length;
+  const untrusted = (cleaning.log.find((x) => x.title.startsWith("Won deals with values")) || {}).deals || 0;
+  document.getElementById("cleanSummary").textContent =
+    `Counting ${fmt.format(e.leads)} of the ${fmt.format(s.leads)} leads in GoHighLevel. ` +
+    `${fmt.format(s.leads - e.leads)} were removed: ${why.join(", ")}. ` +
+    (untrusted ? `${untrusted} ${untrusted === 1 ? "sale has a value" : "sales have values"} too extreme to trust, ` +
+      "so they count as wins but not in revenue. " : "") +
+    `All ${passed} consistency checks passed.`;
   const boxes = document.getElementById("cleanBoxes");
   [[`${s.leads} leads, ${s.deals} deals`, "Pulled from GoHighLevel"],
    [`${s.leads - e.leads} leads, ${s.deals - e.deals} deals`, "Removed (reasons below)"],

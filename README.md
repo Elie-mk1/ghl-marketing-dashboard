@@ -34,6 +34,7 @@ GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code 
 - **A yellow warning appears if the numbers are more than 3 hours old:** if the hourly update ever stops, the owner sees it instead of trusting old numbers.
 - **Only counts and totals are published:** no names, emails or other students' records, and an automatic check blocks any `@` from being published.
 - **Read-only access to GHL:** the project never creates, edits or deletes anything in the shared sandbox.
+- **Data cleanup shown as a one-line "About this data" note at the bottom, details on click:** the owner sees how many records were removed and why without the page turning into a work log.
 - **Light and dark theme, switch at the top right:** starts from the computer's setting and remembers the owner's choice; charts redraw in the matching colors.
 
 ### Which records belong to the agency
