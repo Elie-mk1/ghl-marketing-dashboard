@@ -94,6 +94,27 @@ Chart.defaults.font.size = 13;
 Chart.defaults.color = MUTED;
 Chart.defaults.plugins.legend.display = false;
 
+// side menu: hide it with the arrow, bring it back with the Menu button (choice remembered)
+setupMenuToggle();
+
+function setupMenuToggle() {
+  const KEY = "dashboardMenuHidden";
+  const openBtn = document.getElementById("menuOpen");
+  const closeBtn = document.getElementById("menuClose");
+  if (!openBtn || !closeBtn) return;
+  const apply = (hidden) => {
+    document.body.classList.toggle("rail-hidden", hidden);
+    openBtn.setAttribute("aria-expanded", String(!hidden));
+    closeBtn.setAttribute("aria-expanded", String(!hidden));
+  };
+  const save = (hidden) => { try { localStorage.setItem(KEY, hidden ? "1" : "0"); } catch (e) { /* private mode */ } };
+  let hidden = false;
+  try { hidden = localStorage.getItem(KEY) === "1"; } catch (e) { /* no storage: start open */ }
+  apply(hidden);
+  closeBtn.addEventListener("click", () => { apply(true); save(true); openBtn.focus(); });
+  openBtn.addEventListener("click", () => { apply(false); save(false); closeBtn.focus(); });
+}
+
 // 1. load the numbers, then draw everything
 fetch(`data.json?t=${Date.now()}`, { cache: "no-store" })   // ?t= skips old cached copies
   .then((response) => response.json())
