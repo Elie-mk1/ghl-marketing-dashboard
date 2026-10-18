@@ -14,15 +14,12 @@ GoHighLevel API → fetch.py → clean.py → metrics.py → site/data.json → 
 ```
 GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code push, and on demand ("Run workflow"). If any check fails, nothing is published and the last correct dashboard stays online.
 
-**Weekly AI summary email:** every Monday morning a second workflow runs the same pipeline, asks an AI (Gemini) to explain the week's budget decision in plain English, checks every number in the draft against the real data, and emails it to the owner.
-
 | File | Job |
 |---|---|
 | `fetch.py` | Downloads all contacts, pipelines and deals from the GHL API (with pagination and retries). |
 | `explore.py` | Profiles the raw data (tags, sources, dates, stages, values, duplicates). The cleaning rules were designed from this. |
 | `clean.py` | Applies each data decision in order and logs how many leads/deals each step touched. |
 | `metrics.py` | Calculates every number per source, runs 9 consistency checks, writes `site/data.json`. |
-| `weekly_report.py` | Writes the Monday email with AI, rejects any draft with a number that isn't in the data, falls back to a template if needed. |
 | `site/` | The dashboard: HTML + CSS + JavaScript with Chart.js. It only reads `data.json`. |
 | `decisions.md` | The full reasoning behind every rule. |
 
@@ -71,14 +68,6 @@ GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code 
 - **Every source is ranked; sources under 15 leads are flagged, never hidden:** the owner should still see a small channel that isn't paying off.
 - **A caution shows when sales are few (28 total):** one sale can change the ranking.
 - **The advice is two short actions ("Increase spend on…", "Reduce spend on…"), with the numbers in the ranked board beside them:** an owner reads the decision in seconds, and the evidence is one glance away.
-
-### Weekly AI summary
-- **The AI explains the decision, it never makes it:** the budget call comes from fixed rules in `metrics.py`, so the email can't disagree with the dashboard.
-- **Every number the AI writes must exist in the data:** a draft with any unknown number (an invented total, a wrong figure) is rejected and retried once.
-- **A plain template email goes out if the AI fails twice or isn't available:** the owner gets their Monday summary either way.
-- **Only counts and totals are sent to the AI:** no names, emails or phone numbers ever leave the pipeline.
-- **Gemini free tier, keys in GitHub Secrets:** no cost, and no key in the code.
-- **Sent to my own inbox while testing:** the course rule is to only message yourself.
 
 ### Consistency checks (publishing stops if any fail)
 Leads and deals by source add up to totals; each source's 8 stages add up to its deals; pipeline + not-in-pipeline = leads; the funnel never grows; last funnel step = won deals; revenue adds up; every source is in exactly one channel group; kept + removed = what GHL returned.
