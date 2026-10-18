@@ -147,3 +147,12 @@ Why: The owner should get the decision in seconds; the evidence is one glance aw
 Decision: A light/dark switch at the top right. It starts from the computer's setting and remembers the choice.
 The budget panel uses the same theme as the rest of the page instead of being a dark block on its own.
 Why: Easier on the eyes in either setting, and one consistent look reads as more professional.
+
+## 19. Weekly AI summary email
+Decision: Every Monday a workflow rebuilds the numbers and asks Gemini to write a three-paragraph email that
+explains the budget decision. The decision itself still comes from metrics.py's rules. Before sending, every
+number in the draft is checked against the data; one unknown number rejects the draft (one retry), and after two
+failures a plain template email is sent instead. Only counts and totals are sent to the AI.
+Why: The owner gets the answer in their inbox without opening anything, in words rather than charts. Language
+models can invent or miscalculate numbers, so the AI is limited to wording, and a check makes a made-up figure
+impossible to send.
