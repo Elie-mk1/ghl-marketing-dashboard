@@ -2,7 +2,7 @@
 
 A one-page dashboard an agency owner opens on Monday morning to see **which lead source deserves next month's budget**. It pulls the agency's leads and 8-stage Sales Pipeline from GoHighLevel, cleans the data, and compares every source side by side.
 
-**Live dashboard:** VERCEL_URL
+**Live dashboard:** https://ghl-marketing-dashboard-rx.vercel.app/
 
 ## How it works
 
