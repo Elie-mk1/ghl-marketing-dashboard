@@ -1,4 +1,4 @@
-// Phase 6: read data.json and draw the dashboard.
+// Reads the latest numbers from api/data and draws the dashboard.
 // Order follows the brief: answer -> volume -> pipeline -> conversion -> revenue -> cleaning.
 
 const BLUE = "#2a78d6";
@@ -23,9 +23,8 @@ const STAGE_COLORS = {
   "Lost": "#76746d",
 };
 
-// must match the schedule in .github/workflows/refresh.yml ("17 * * * *" = every hour at :17 UTC)
-const REFRESH_MINUTE_UTC = 17;
-const STALE_AFTER_HOURS = 3;   // older than this means the hourly update has probably stopped
+// numbers update by themselves every Monday morning (vercel.json), or on demand with the button
+const STALE_AFTER_DAYS = 8;    // older than this means the Monday update has probably stopped
 
 const FONT = "Onest, system-ui, -apple-system, 'Segoe UI', sans-serif";
 // chart text and line colors come from the page theme (light or dark) - see readTheme()
@@ -163,11 +162,15 @@ function setupMenuToggle() {
 }
 
 // 1. load the numbers, then draw everything
-fetch(`data.json?t=${Date.now()}`, { cache: "no-store" })   // ?t= skips old cached copies
-  .then((response) => response.json())
+// a small server function returns the latest saved numbers; when previewing the site/ folder
+// locally (no server functions) it falls back to the data.json that metrics.py writes
+const getJson = (url) => fetch(url, { cache: "no-store" })
+  .then((response) => { if (!response.ok) throw new Error(response.status); return response.json(); });
+getJson("api/data")
+  .catch(() => getJson("data.json"))
   .then((data) => document.fonts.ready.then(() => draw(data)))   // wait for the web font so charts use it
   .catch(() => {
-    document.getElementById("updated").textContent = "Could not load data.json";
+    document.getElementById("updated").textContent = "Could not load the numbers. Refresh the page in a minute.";
   });
 
 function draw(data) {
@@ -190,54 +193,47 @@ function draw(data) {
   drawCleaning(data.cleaning, data.checks);
 }
 
-// ---------------------------------------------------------------- status: last update, countdown, check button
-function nextRefresh(now) {
-  const next = new Date(now);
-  next.setUTCMinutes(REFRESH_MINUTE_UTC, 0, 0);
-  if (next <= now) next.setUTCHours(next.getUTCHours() + 1);
-  return next;
-}
-
-function countdownText() {
-  const mins = Math.max(1, Math.ceil((nextRefresh(new Date()) - new Date()) / 60000));
-  return `Next update from GoHighLevel in about ${mins} min`;
-}
-
+// ---------------------------------------------------------------- status: last update + "Get latest numbers"
 function drawStatus(updated) {
   const when = new Date(updated);
   document.getElementById("updated").textContent = "Numbers updated " + when.toLocaleString("en-GB",
     { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  document.getElementById("next").textContent = "Updates automatically every Monday morning";
 
-  const next = document.getElementById("next");
-  const tick = () => { next.textContent = countdownText(); };
-  tick();
-  setInterval(tick, 30000);   // update the countdown every 30 seconds
-
-  // warn if the automatic update seems to have stopped
-  const hoursOld = (Date.now() - when) / 3600000;
-  if (hoursOld > STALE_AFTER_HOURS) {
+  // warn if the automatic Monday update seems to have stopped
+  const daysOld = (Date.now() - when) / 86400000;
+  if (daysOld > STALE_AFTER_DAYS) {
     const stale = document.getElementById("stale");
-    stale.textContent = `These numbers are ${Math.floor(hoursOld)} hours old. They normally update every hour, ` +
-      "so the automatic update may have stopped. Ask whoever manages this dashboard to check it.";
+    stale.textContent = `These numbers are ${Math.floor(daysOld)} days old. They normally update every Monday, ` +
+      "so the automatic update may have stopped. Press \"Get latest numbers\" or ask whoever manages this dashboard.";
     stale.hidden = false;
   }
 
-  // "Check for new numbers": looks for a newer data.json and reloads the page if there is one
+  // "Get latest numbers": asks the server to pull from GoHighLevel now (the key never reaches this page)
   const button = document.getElementById("refreshBtn");
   const msg = document.getElementById("refreshMsg");
   button.addEventListener("click", async () => {
     button.disabled = true;
-    msg.textContent = "Checking…";
+    msg.textContent = "Getting the latest numbers from GoHighLevel… this takes about 15 seconds.";
     try {
-      const fresh = await (await fetch(`data.json?t=${Date.now()}`, { cache: "no-store" })).json();
-      if (new Date(fresh.updated) > when) {
-        msg.textContent = "New numbers found. Reloading…";
+      const response = await fetch("api/refresh", { method: "POST" });
+      const result = await response.json();
+      if (result.status === "updated") {
+        msg.textContent = "Done. Loading the new numbers…";
         location.reload();
         return;
       }
-      msg.textContent = "You're already seeing the latest numbers.";
+      if (result.status === "recent") {
+        msg.textContent = "These numbers were updated less than 5 minutes ago, so they're already the latest.";
+      } else if (result.status === "busy") {
+        msg.textContent = "An update is already running. Loading the new numbers in a moment…";
+        setTimeout(() => location.reload(), 20000);
+        return;
+      } else {
+        msg.textContent = "Couldn't get new numbers right now, so you're seeing the last good ones. Try again later.";
+      }
     } catch (e) {
-      msg.textContent = "Couldn't check right now. Try again in a minute.";
+      msg.textContent = "Couldn't reach the server. Check your connection and try again.";
     }
     button.disabled = false;
   });

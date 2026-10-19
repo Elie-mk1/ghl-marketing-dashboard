@@ -1,0 +1,15 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "",
+  "outputDirectory": "site",
+  "functions": {
+    "api/*.py": {
+      "maxDuration": 60,
+      "includeFiles": "{fetch.py,clean.py,metrics.py,api/_pipeline.py}"
+    }
+  },
+  "crons": [
+    { "path": "/api/refresh", "schedule": "0 4 * * 1" }
+  ]
+}

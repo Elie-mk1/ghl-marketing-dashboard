@@ -2,17 +2,17 @@
 
 A one-page dashboard an agency owner opens on Monday morning to see **which lead source deserves next month's budget**. It pulls the agency's leads and 8-stage Sales Pipeline from GoHighLevel, cleans the data, and compares every source side by side.
 
-**Live dashboard:** https://elie-mk1.github.io/ghl-marketing-dashboard/
+**Live dashboard:** VERCEL_URL
 
 ## How it works
 
 ```
-GoHighLevel API → fetch.py → clean.py → metrics.py → site/data.json → site/ (GitHub Pages)
-                  download   clean +     numbers by     counts only,     the web page
-                  all data   log every   source +       no personal
-                             change      9 checks       details
+GoHighLevel API → fetch.py → clean.py → metrics.py → saved numbers → site/ (the web page)
+                  download   clean +     numbers by     counts only,    reads them from
+                  all data   log every   source +       kept in Redis   /api/data
+                             change      9 checks
 ```
-GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code push, and on demand ("Run workflow"). If any check fails, nothing is published and the last correct dashboard stays online.
+Hosted on **Vercel**. A small server function (`api/refresh.py`) runs the whole chain **every Monday morning** and whenever the owner presses **"Get latest numbers"** (at most once every 5 minutes). If any check fails, nothing is saved and the last correct numbers stay online. GitHub Actions runs the same chain as a test on every code change.
 
 | File | Job |
 |---|---|
@@ -20,18 +20,22 @@ GitHub Actions runs the whole chain **every hour (at :17 past)**, on every code 
 | `explore.py` | Profiles the raw data (tags, sources, dates, stages, values, duplicates). The cleaning rules were designed from this. |
 | `clean.py` | Applies each data decision in order and logs how many leads/deals each step touched. |
 | `metrics.py` | Calculates every number per source, runs 9 consistency checks, writes `site/data.json`. |
+| `api/` | Vercel server functions: `refresh.py` runs the chain and saves the result, `data.py` serves the latest numbers to the page. The API key lives only here, in Vercel's settings. |
+| `vercel.json` | Hosting settings and the Monday schedule. |
 | `site/` | The dashboard: HTML + CSS + JavaScript with Chart.js. It only reads `data.json`. |
 | `decisions.md` | The full reasoning behind every rule. |
 
 ## Decisions and why
 
 ### Stack
-- **Python scripts + static web page on GitHub Pages:** free, always on, a shareable link, nothing to maintain.
-- **Data pulled server-side by GitHub Actions, not in the browser:** the API key never reaches browser code.
-- **Hourly scheduled refresh, not live:** fresh enough to act on the same day, and the key stays server-side.
-- **A countdown shows when the next update lands, and a "Check for new numbers" button loads it:** the owner can act on current numbers without waiting or guessing.
-- **No "pull from GoHighLevel now" button in the page:** starting a refresh needs a GitHub token, and keys never go in browser code. That would need a small server holding the token.
-- **A yellow warning appears if the numbers are more than 3 hours old:** if the hourly update ever stops, the owner sees it instead of trusting old numbers.
+- **Python scripts + static page + server functions on Vercel (free plan):** one place for the page, the scheduled update and the on-demand update, with a shareable link.
+- **Data pulled server-side, never in the browser:** the API key lives in Vercel's encrypted settings; the page only ever receives counts.
+- **Updates every Monday morning, plus a "Get latest numbers" button:** the owner's routine is weekly, and fresh numbers are one click away mid-week.
+- **The button pulls from GoHighLevel at most once every 5 minutes, one update at a time:** nobody can flood the GHL API by clicking repeatedly.
+- **The latest good numbers are kept in Upstash Redis (free):** server functions keep nothing between runs, so the page needs somewhere to read them from.
+- **Started on GitHub Pages with hourly GitHub Actions, then moved:** GitHub ran the "hourly" schedule only every 2–5 hours, and a real refresh button needs a server to hold the key.
+- **GitHub Actions still runs the full chain on every code change:** a change that breaks the cleaning or a check fails there before it reaches the owner.
+- **A yellow warning appears if the numbers are more than 8 days old:** if the Monday update ever stops, the owner sees it instead of trusting old numbers.
 - **Only counts and totals are published:** no names, emails or other students' records, and an automatic check blocks any `@` from being published.
 - **Read-only access to GHL:** the project never creates, edits or deletes anything in the shared sandbox.
 - **Data cleanup shown as a one-line "About this data" note at the bottom, details on click:** the owner sees how many records were removed and why without the page turning into a work log.
@@ -84,5 +88,5 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 # put GHL_API_KEY and GHL_LOCATION_ID in a .env file
 python fetch.py && python clean.py && python metrics.py
-python -m http.server 8000 --directory site    # open http://localhost:8000
+python -m http.server 8000 --directory site    # open http://localhost:8000 (reads site/data.json)
 ```

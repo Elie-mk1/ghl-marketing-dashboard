@@ -1,52 +1,36 @@
-name: Refresh dashboard
+name: Test pipeline
 
+# The live dashboard runs on Vercel (vercel.json). This workflow is the safety net for code changes:
+# on every push it runs the full fetch -> clean -> metrics chain against GoHighLevel, so a change
+# that breaks the cleaning or any consistency check shows up here as a red X.
 on:
-  schedule:
-    - cron: "17 * * * *"   # every hour at :17 UTC (site/app.js counts down to this - keep them in sync)
-  workflow_dispatch:        # adds a "Run workflow" button for an on-demand refresh
   push:
-    branches: [main]        # also run whenever new code is pushed
+    branches: [main]
+  workflow_dispatch:        # "Run workflow" button for a manual test
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5              # 1. download your code
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6          # 2. install Python
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
 
-      - run: pip install -r requirements.txt   # 3. install requests + python-dotenv
+      - run: pip install -r requirements.txt
 
-      - name: Fetch from GoHighLevel           # 4. the key comes from Secrets, never from the code
+      - name: Fetch from GoHighLevel             # the key comes from Secrets, never from the code
         env:
           GHL_API_KEY: ${{ secrets.GHL_API_KEY }}
           GHL_LOCATION_ID: ${{ secrets.GHL_LOCATION_ID }}
         run: python fetch.py
 
-      - run: python clean.py                   # 5. clean
-      - run: python metrics.py                 # 6. calculate + checks (stops here if any fail)
+      - run: python clean.py
+      - run: python metrics.py                   # fails the test if any consistency check fails
 
       - name: Safety check - no emails in the published data
         run: "! grep -q '@' site/data.json"
-
-      - uses: actions/upload-pages-artifact@v4  # 7. package the site/ folder
-        with:
-          path: site
-
-  deploy:
-    needs: build                               # only runs if every step above succeeded
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4          # 8. publish to GitHub Pages
-        
