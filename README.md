@@ -12,7 +12,7 @@ GoHighLevel API → fetch.py → clean.py → metrics.py → saved numbers → s
                   all data   log every   source +       kept in Redis   /api/data
                              change      9 checks
 ```
-Hosted on **Vercel**. A small server function (`api/refresh.py`) runs the whole chain **every Monday morning** and whenever the owner presses **"Get latest numbers"** (at most once every 5 minutes). If any check fails, nothing is saved and the last correct numbers stay online. GitHub Actions runs the same chain as a test on every code change.
+Hosted on **Vercel**. A small server function (`api/refresh.py`) runs the whole chain **every morning** and whenever the owner presses **"Get latest numbers"** (at most once every 5 minutes). If any check fails, nothing is saved and the last correct numbers stay online. GitHub Actions runs the same chain as a test on every code change.
 
 | File | Job |
 |---|---|
@@ -21,7 +21,7 @@ Hosted on **Vercel**. A small server function (`api/refresh.py`) runs the whole 
 | `clean.py` | Applies each data decision in order and logs how many leads/deals each step touched. |
 | `metrics.py` | Calculates every number per source, runs 9 consistency checks, writes `site/data.json`. |
 | `api/` | Vercel server functions: `refresh.py` runs the chain and saves the result, `data.py` serves the latest numbers to the page. The API key lives only here, in Vercel's settings. |
-| `vercel.json` | Hosting settings and the Monday schedule. |
+| `vercel.json` | Hosting settings and the daily schedule. |
 | `site/` | The dashboard: HTML + CSS + JavaScript with Chart.js. It only reads `data.json`. |
 | `decisions.md` | The full reasoning behind every rule. |
 
@@ -30,12 +30,12 @@ Hosted on **Vercel**. A small server function (`api/refresh.py`) runs the whole 
 ### Stack
 - **Python scripts + static page + server functions on Vercel (free plan):** one place for the page, the scheduled update and the on-demand update, with a shareable link.
 - **Data pulled server-side, never in the browser:** the API key lives in Vercel's encrypted settings; the page only ever receives counts.
-- **Updates every Monday morning, plus a "Get latest numbers" button:** the owner's routine is weekly, and fresh numbers are one click away mid-week.
+- **Updates every morning (7–8 am Beirut), plus a "Get latest numbers" button:** the dashboard is never more than a day behind, a missed run costs one day instead of a week, and fresh numbers are one click away.
 - **The button pulls from GoHighLevel at most once every 5 minutes, one update at a time:** nobody can flood the GHL API by clicking repeatedly.
 - **The latest good numbers are kept in Upstash Redis (free):** server functions keep nothing between runs, so the page needs somewhere to read them from.
 - **Started on GitHub Pages with hourly GitHub Actions, then moved:** GitHub ran the "hourly" schedule only every 2–5 hours, and a real refresh button needs a server to hold the key.
 - **GitHub Actions still runs the full chain on every code change:** a change that breaks the cleaning or a check fails there before it reaches the owner.
-- **A yellow warning appears if the numbers are more than 8 days old:** if the Monday update ever stops, the owner sees it instead of trusting old numbers.
+- **A yellow warning appears if the numbers are more than 2 days old:** if the daily update ever stops, the owner sees it instead of trusting old numbers.
 - **Only counts and totals are published:** no names, emails or other students' records, and an automatic check blocks any `@` from being published.
 - **Read-only access to GHL:** the project never creates, edits or deletes anything in the shared sandbox.
 - **Data cleanup shown as a one-line "About this data" note at the bottom, details on click:** the owner sees how many records were removed and why without the page turning into a work log.

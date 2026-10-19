@@ -1,7 +1,7 @@
 """Pull fresh numbers from GoHighLevel.
 
 POST /api/refresh  -> the "Get latest numbers" button (at most once every 5 minutes)
-GET  /api/refresh  -> Vercel's Monday schedule; only accepted with the CRON_SECRET Vercel sends
+GET  /api/refresh  -> Vercel's daily schedule; only accepted with the CRON_SECRET Vercel sends
 """
 import os
 import sys
@@ -24,7 +24,7 @@ class handler(BaseHTTPRequestHandler):
     def do_POST(self):                        # the button
         run(self, force=False)
 
-    def do_GET(self):                         # the schedule
+    def do_GET(self):                         # the daily schedule
         secret = os.getenv("CRON_SECRET")
         if not secret or self.headers.get("Authorization") != f"Bearer {secret}":
             return send_json(self, 401, {"status": "unauthorized"})

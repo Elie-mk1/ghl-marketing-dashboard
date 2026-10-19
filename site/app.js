@@ -23,8 +23,8 @@ const STAGE_COLORS = {
   "Lost": "#76746d",
 };
 
-// numbers update by themselves every Monday morning (vercel.json), or on demand with the button
-const STALE_AFTER_DAYS = 8;    // older than this means the Monday update has probably stopped
+// numbers update by themselves every morning (vercel.json), or on demand with the button
+const STALE_AFTER_DAYS = 2;    // older than this means the daily update has probably stopped
 
 const FONT = "Onest, system-ui, -apple-system, 'Segoe UI', sans-serif";
 // chart text and line colors come from the page theme (light or dark) - see readTheme()
@@ -198,13 +198,13 @@ function drawStatus(updated) {
   const when = new Date(updated);
   document.getElementById("updated").textContent = "Numbers updated " + when.toLocaleString("en-GB",
     { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
-  document.getElementById("next").textContent = "Updates automatically every Monday morning";
+  document.getElementById("next").textContent = "Updates automatically every morning";
 
-  // warn if the automatic Monday update seems to have stopped
+  // warn if the automatic daily update seems to have stopped
   const daysOld = (Date.now() - when) / 86400000;
   if (daysOld > STALE_AFTER_DAYS) {
     const stale = document.getElementById("stale");
-    stale.textContent = `These numbers are ${Math.floor(daysOld)} days old. They normally update every Monday, ` +
+    stale.textContent = `These numbers are ${Math.floor(daysOld)} days old. They normally update every morning, ` +
       "so the automatic update may have stopped. Press \"Get latest numbers\" or ask whoever manages this dashboard.";
     stale.hidden = false;
   }

@@ -148,14 +148,15 @@ Decision: A light/dark switch at the top right. It starts from the computer's se
 The budget panel uses the same theme as the rest of the page instead of being a dark block on its own.
 Why: Easier on the eyes in either setting, and one consistent look reads as more professional.
 
-## 19. Moved hosting to Vercel: weekly updates plus a real "Get latest numbers" button
+## 19. Moved hosting to Vercel: daily updates plus a real "Get latest numbers" button
 Found: GitHub's free scheduler ran the "hourly" update only every 2 to 5 hours, so the dashboard showed a
 staleness warning, and its button could only check for already-published numbers, not pull new ones.
-Decision: Host on Vercel. A server function runs the same fetch -> clean -> metrics chain every Monday morning
+Decision: Host on Vercel. A server function runs the same fetch -> clean -> metrics chain every morning
 and when the owner presses "Get latest numbers" (at most once every 5 minutes, one run at a time). The latest
 good result is kept in Upstash Redis; if a check fails, nothing is saved. The staleness warning now appears
-after 8 days. GitHub Actions keeps running the chain as a test on every code change.
-Why: The owner works weekly, so a Monday update matches their routine, and the button gives truly fresh
-numbers on demand. A server function can hold the GoHighLevel key privately, so the button works without
+after 2 days. GitHub Actions keeps running the chain as a test on every code change.
+Why: Daily is the most Vercel's free plan allows and costs nothing extra, the numbers are never more than a
+day old, and a missed run (Vercel doesn't retry them) costs one day instead of a week. The button gives truly
+fresh numbers on demand. A server function can hold the GoHighLevel key privately, so the button works without
 any key ever reaching the browser.
 

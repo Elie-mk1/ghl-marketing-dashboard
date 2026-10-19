@@ -69,7 +69,7 @@ def minutes_since(timestamp):
 
 
 def refresh(force=False):
-    """Pull fresh numbers and save them. force=True skips the cooldown (used by the Monday schedule)."""
+    """Pull fresh numbers and save them. force=True skips the cooldown (used by the daily schedule)."""
     current = load()
     if current and not force and minutes_since(current["updated"]) < COOLDOWN_MINUTES:
         return {"status": "recent", "updated": current["updated"]}
